@@ -8,6 +8,7 @@ import dev.xkmc.l2library.capability.entity.GeneralCapabilityTemplate;
 import dev.xkmc.l2serial.serialization.SerialClass;
 import dev.xkmc.l2serial.serialization.SerialClass.SerialField;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.Attribute;
@@ -39,11 +40,11 @@ public class EntityDebuffCapability extends GeneralCapabilityTemplate<LivingEnti
 
     private static final UUID PLUNDER_MODIFIER_UUID =
             UUID.fromString("9e2f8a10-4b2c-4d3e-9a11-71f0e3a20101");
-    private static final UUID APOCALYPSE_ADD_UUID =
+    private static final UUID SLOT_PENALTY_ADD_UUID =
             UUID.fromString("9e2f8a10-4b2c-4d3e-9a11-71f0e3a20201");
-    private static final UUID APOCALYPSE_MULT_BASE_UUID =
+    private static final UUID SLOT_PENALTY_MULT_BASE_UUID =
             UUID.fromString("9e2f8a10-4b2c-4d3e-9a11-71f0e3a20202");
-    private static final UUID APOCALYPSE_MULT_TOTAL_UUID =
+    private static final UUID SLOT_PENALTY_MULT_TOTAL_UUID =
             UUID.fromString("9e2f8a10-4b2c-4d3e-9a11-71f0e3a20203");
 
     @SerialField
@@ -52,7 +53,10 @@ public class EntityDebuffCapability extends GeneralCapabilityTemplate<LivingEnti
     @SerialField
     public HashMap<String, Long> apocalypseSlots = new HashMap<>();
 
-    private final Set<Attribute> appliedApocalypseAttributes = new HashSet<>();
+    @SerialField
+    public HashMap<String, Long> sealedSlots = new HashMap<>();
+
+    private final Set<Attribute> appliedPenaltyAttributes = new HashSet<>();
 
     public static EntityDebuffCapability get(LivingEntity entity) {
         return HOLDER.get(entity);
@@ -76,14 +80,28 @@ public class EntityDebuffCapability extends GeneralCapabilityTemplate<LivingEnti
 
     public void applyApocalypse(LivingEntity entity, String slotKey, long gameTime) {
         apocalypseSlots.put(slotKey, gameTime + 100L); // 5 seconds
-        updateApocalypseModifiers(entity);
+        updateSlotPenaltyModifiers(entity);
+    }
+
+    public void applySeal(LivingEntity entity, String slotKey, long gameTime) {
+        sealedSlots.put(slotKey, gameTime + 5L); // 5 ticks
+        updateSlotPenaltyModifiers(entity);
+    }
+
+    public boolean isHandSealed(InteractionHand hand, long gameTime) {
+        String key = hand == InteractionHand.MAIN_HAND
+                ? "vanilla:" + EquipmentSlot.MAINHAND.getName()
+                : "vanilla:" + EquipmentSlot.OFFHAND.getName();
+        Long expire = sealedSlots.get(key);
+        return expire != null && gameTime < expire;
     }
 
     public void clearAll(LivingEntity entity) {
         plunderExpireTicks.clear();
         apocalypseSlots.clear();
+        sealedSlots.clear();
         updatePlunderModifier(entity);
-        updateApocalypseModifiers(entity);
+        updateSlotPenaltyModifiers(entity);
     }
 
     public void tick(LivingEntity entity) {
@@ -99,11 +117,12 @@ public class EntityDebuffCapability extends GeneralCapabilityTemplate<LivingEnti
             }
         }
 
-        if (!apocalypseSlots.isEmpty()) {
-            apocalypseSlots.entrySet().removeIf(entry -> gameTime >= entry.getValue());
-            updateApocalypseModifiers(entity);
-        } else if (!appliedApocalypseAttributes.isEmpty()) {
-            updateApocalypseModifiers(entity);
+        boolean hadSlotPenalties = !apocalypseSlots.isEmpty() || !sealedSlots.isEmpty();
+        apocalypseSlots.entrySet().removeIf(entry -> gameTime >= entry.getValue());
+        sealedSlots.entrySet().removeIf(entry -> gameTime >= entry.getValue());
+
+        if (hadSlotPenalties || !appliedPenaltyAttributes.isEmpty()) {
+            updateSlotPenaltyModifiers(entity);
         }
     }
 
@@ -115,7 +134,8 @@ public class EntityDebuffCapability extends GeneralCapabilityTemplate<LivingEnti
         instance.removeModifier(PLUNDER_MODIFIER_UUID);
         int count = plunderExpireTicks.size();
         if (count > 0) {
-            double factor = Math.pow(0.99, count) - 1.0;
+            // Subtracts 1% of final value per stack
+            double factor = Math.max(-0.99, -0.01 * count);
             instance.addTransientModifier(new AttributeModifier(
                     PLUNDER_MODIFIER_UUID,
                     "rohostility_plunder",
@@ -128,24 +148,28 @@ public class EntityDebuffCapability extends GeneralCapabilityTemplate<LivingEnti
         }
     }
 
-    private void updateApocalypseModifiers(LivingEntity entity) {
-        for (Attribute attr : appliedApocalypseAttributes) {
+    private void updateSlotPenaltyModifiers(LivingEntity entity) {
+        for (Attribute attr : appliedPenaltyAttributes) {
             AttributeInstance inst = entity.getAttribute(attr);
             if (inst != null) {
-                inst.removeModifier(APOCALYPSE_ADD_UUID);
-                inst.removeModifier(APOCALYPSE_MULT_BASE_UUID);
-                inst.removeModifier(APOCALYPSE_MULT_TOTAL_UUID);
+                inst.removeModifier(SLOT_PENALTY_ADD_UUID);
+                inst.removeModifier(SLOT_PENALTY_MULT_BASE_UUID);
+                inst.removeModifier(SLOT_PENALTY_MULT_TOTAL_UUID);
             }
         }
-        appliedApocalypseAttributes.clear();
+        appliedPenaltyAttributes.clear();
 
-        if (apocalypseSlots.isEmpty()) {
+        if (apocalypseSlots.isEmpty() && sealedSlots.isEmpty()) {
             return;
         }
 
+        Set<String> allAffectedSlots = new HashSet<>(apocalypseSlots.keySet());
+        allAffectedSlots.addAll(sealedSlots.keySet());
+
         Map<Attribute, double[]> penalties = new HashMap<>();
 
-        for (String slotKey : apocalypseSlots.keySet()) {
+        for (String slotKey : allAffectedSlots) {
+            double ratio = sealedSlots.containsKey(slotKey) ? 1.0 : 0.1;
             Multimap<Attribute, AttributeModifier> mods = getSlotModifiers(entity, slotKey);
             if (mods == null || mods.isEmpty()) {
                 continue;
@@ -157,9 +181,9 @@ public class EntityDebuffCapability extends GeneralCapabilityTemplate<LivingEnti
                 }
                 double[] sums = penalties.computeIfAbsent(entry.getKey(), k -> new double[3]);
                 switch (mod.getOperation()) {
-                    case ADDITION -> sums[0] += mod.getAmount();
-                    case MULTIPLY_BASE -> sums[1] += mod.getAmount();
-                    case MULTIPLY_TOTAL -> sums[2] += mod.getAmount();
+                    case ADDITION -> sums[0] += mod.getAmount() * ratio;
+                    case MULTIPLY_BASE -> sums[1] += mod.getAmount() * ratio;
+                    case MULTIPLY_TOTAL -> sums[2] += mod.getAmount() * ratio;
                 }
             }
         }
@@ -174,25 +198,25 @@ public class EntityDebuffCapability extends GeneralCapabilityTemplate<LivingEnti
             boolean applied = false;
             if (sums[0] > 0.0) {
                 inst.addTransientModifier(new AttributeModifier(
-                        APOCALYPSE_ADD_UUID, "rohostility_apocalypse_add",
-                        -sums[0] * 0.1, AttributeModifier.Operation.ADDITION));
+                        SLOT_PENALTY_ADD_UUID, "rohostility_slot_penalty_add",
+                        -sums[0], AttributeModifier.Operation.ADDITION));
                 applied = true;
             }
             if (sums[1] > 0.0) {
                 inst.addTransientModifier(new AttributeModifier(
-                        APOCALYPSE_MULT_BASE_UUID, "rohostility_apocalypse_base",
-                        -sums[1] * 0.1, AttributeModifier.Operation.MULTIPLY_BASE));
+                        SLOT_PENALTY_MULT_BASE_UUID, "rohostility_slot_penalty_base",
+                        -sums[1], AttributeModifier.Operation.MULTIPLY_BASE));
                 applied = true;
             }
             if (sums[2] > 0.0) {
-                double factor = (1.0 + 0.9 * sums[2]) / (1.0 + sums[2]) - 1.0;
+                double factor = Math.max(-0.99, -sums[2] / (1.0 + sums[2]));
                 inst.addTransientModifier(new AttributeModifier(
-                        APOCALYPSE_MULT_TOTAL_UUID, "rohostility_apocalypse_total",
+                        SLOT_PENALTY_MULT_TOTAL_UUID, "rohostility_slot_penalty_total",
                         factor, AttributeModifier.Operation.MULTIPLY_TOTAL));
                 applied = true;
             }
             if (applied) {
-                appliedApocalypseAttributes.add(attr);
+                appliedPenaltyAttributes.add(attr);
             }
         }
 
@@ -252,6 +276,24 @@ public class EntityDebuffCapability extends GeneralCapabilityTemplate<LivingEnti
                 if (hasPositiveModifiers(CuriosCompat.getCurioAttributeModifiers(entity, slotId, index, entry.stack()))) {
                     slots.add(entry.slotKey());
                 }
+            }
+        }
+        return slots;
+    }
+
+    /**
+     * Collects all non-empty equipped slot keys (vanilla + curios) for Seal.
+     */
+    public static List<String> collectAllEquippedSlots(LivingEntity entity) {
+        List<String> slots = new ArrayList<>();
+        for (EquipmentSlot slot : EquipmentSlot.values()) {
+            if (!entity.getItemBySlot(slot).isEmpty()) {
+                slots.add("vanilla:" + slot.getName());
+            }
+        }
+        if (CuriosCompat.isLoaded()) {
+            for (CuriosCompat.CurioSlotEntry entry : CuriosCompat.getEquippedCurios(entity)) {
+                slots.add(entry.slotKey());
             }
         }
         return slots;

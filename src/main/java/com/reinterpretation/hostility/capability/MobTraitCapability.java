@@ -56,6 +56,18 @@ public class MobTraitCapability extends GeneralCapabilityTemplate<LivingEntity, 
     @SerialField
     public int adaptCount = 0;
 
+    @SerialField
+    public long lastCounterTick = -1000L;
+
+    @SerialField
+    public long lastInspireTick = 0L;
+
+    @SerialField
+    public ArrayList<String> inspiredVexUuids = new ArrayList<>();
+
+    @SerialField
+    public boolean inspireSummoned = false;
+
     public static boolean isHostileCandidate(LivingEntity entity) {
         return entity instanceof Mob && entity instanceof Enemy;
     }

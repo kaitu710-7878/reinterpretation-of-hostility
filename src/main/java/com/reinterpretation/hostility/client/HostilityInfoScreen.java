@@ -12,14 +12,19 @@ import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.InventoryScreen;
 import net.minecraft.network.chat.Component;
+import net.minecraft.util.Mth;
 import net.minecraft.world.entity.player.Player;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class HostilityInfoScreen extends Screen {
 
-    private static final int PANEL_WIDTH = 340;
+    private static final int PANEL_WIDTH = 360;
     private static final int PANEL_HEIGHT = 230;
 
     private Button unlockButton;
+    private int scrollOffset = 0;
 
     public HostilityInfoScreen() {
         super(Component.translatable("screen.rohostility.info.title"));
@@ -136,14 +141,26 @@ public class HostilityInfoScreen extends Screen {
             ).withStyle(dangerLevel >= traitMin ? ChatFormatting.YELLOW : ChatFormatting.DARK_GRAY);
             graphics.drawString(this.font, traitHeader, left + 16, top + 76, 0xFFFFFF);
 
-            int y = top + 92;
+            int listTop = top + 92;
+            int listBottom = top + PANEL_HEIGHT - 32;
+            int maxVisible = Math.max(1, (listBottom - listTop) / 12);
+
+            List<TraitType> enabledTraits = new ArrayList<>();
             for (TraitType type : TraitType.values()) {
-                if (!type.isEnabled()) {
-                    continue;
+                if (type.isEnabled()) {
+                    enabledTraits.add(type);
                 }
+            }
+
+            int maxScroll = Math.max(0, enabledTraits.size() - maxVisible);
+            scrollOffset = Mth.clamp(scrollOffset, 0, maxScroll);
+
+            int y = listTop;
+            for (int i = scrollOffset; i < Math.min(enabledTraits.size(), scrollOffset + maxVisible); i++) {
+                TraitType type = enabledTraits.get(i);
                 Component line = Component.literal("• ")
                         .append(type.getDisplayName())
-                        .append(Component.literal(" - ").withStyle(ChatFormatting.GRAY))
+                        .append(Component.literal(" (Cost " + type.getCost() + ") - ").withStyle(ChatFormatting.DARK_GRAY))
                         .append(type.getDescription().withStyle(ChatFormatting.GRAY));
                 graphics.drawString(this.font, line, left + 18, y, 0xFFFFFF);
                 y += 12;
@@ -151,6 +168,18 @@ public class HostilityInfoScreen extends Screen {
         }
 
         super.render(graphics, mouseX, mouseY, partialTick);
+    }
+
+    @Override
+    public boolean mouseScrolled(double mouseX, double mouseY, double delta) {
+        if (delta > 0) {
+            scrollOffset = Math.max(0, scrollOffset - 1);
+            return true;
+        } else if (delta < 0) {
+            scrollOffset++;
+            return true;
+        }
+        return super.mouseScrolled(mouseX, mouseY, delta);
     }
 
     @Override

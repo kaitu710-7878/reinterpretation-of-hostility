@@ -5,6 +5,7 @@ import com.reinterpretation.hostility.capability.EntityDebuffCapability;
 import com.reinterpretation.hostility.capability.MobTraitCapability;
 import com.reinterpretation.hostility.capability.PlayerDifficultyCapability;
 import com.reinterpretation.hostility.config.ModConfig;
+import com.reinterpretation.hostility.effect.ModEffects;
 import com.reinterpretation.hostility.network.NetworkHandler;
 import net.minecraftforge.common.capabilities.RegisterCapabilitiesEvent;
 import net.minecraftforge.eventbus.api.IEventBus;
@@ -25,6 +26,7 @@ public class ReinterpretationOfHostility {
         IEventBus modEventBus = FMLJavaModLoadingContext.get().getModEventBus();
 
         ModLoadingContext.get().registerConfig(Type.COMMON, ModConfig.COMMON_SPEC);
+        ModEffects.register(modEventBus);
 
         PlayerDifficultyCapability.register();
         MobTraitCapability.register();

@@ -1,5 +1,19 @@
 # Changelog / 変更履歴
 
+## [0.1.2-alpha] - 2026-11-16
+
+### 日本語
+- **奪取 (`plunder`)**: 最終値への `0.99` 乗算方式から、最終値を1%ずつ減らす割合減算方式へ変更。
+- **新規特性15種を追加**: 狂戦士 (150)、封印 (550)、生命吸収 (120)、装甲貫通 (150)、加護貫通 (150)、段差無視 (50)、万能耐性 (120)、頑丈 (100)、活力 (120)、不死殺し (200)、反撃 (100)、鼓舞 (180)、毒撃 (50)、衰弱 (70)、怨嗟 (90)。
+- **新規状態異常・ダメージタイプ**: 復活阻止（中立エフェクト）、呪詛（悪性エフェクト、回復量50%減）、装甲貫通ダメージ、加護貫通ダメージを追加。
+- 難易度情報画面 (`HostilityInfoScreen`) の特性一覧をマウスホイールスクロールに対応。
+
+### English
+- **Plunder**: Changed from `0.99` multiplicative stacking to subtracting `1%` of the final max HP value per stack.
+- **Added 15 new traits**: Berserker (150), Seal (550), Lifesteal (120), Armor Pierce (150), Protection Pierce (150), Step Up (50), Universal Resistance (120), Sturdy (100), Vitality (120), Anti-Revive (200), Counterattack (100), Inspire (180), Poison Strike (50), Weakness Strike (70), and Resentment (90).
+- **Added new status effects & damage types**: Revive Prevention (neutral effect), Curse (harmful effect, -50% healing), Armor Pierce damage, and Protection Pierce damage.
+- Added mouse wheel scrolling to the trait list in `HostilityInfoScreen`.
+
 ## [0.1.1-alpha] - 2026-11-15
 
 ### 日本語

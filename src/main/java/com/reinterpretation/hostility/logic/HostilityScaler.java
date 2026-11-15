@@ -11,10 +11,12 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.level.Level;
+import net.minecraftforge.common.ForgeMod;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -26,6 +28,20 @@ public final class HostilityScaler {
             UUID.fromString("7a1c4b20-1122-4334-9556-88aabbcc0001");
     private static final UUID LEVEL_DAMAGE_UUID =
             UUID.fromString("7a1c4b20-1122-4334-9556-88aabbcc0002");
+    private static final UUID STEP_UP_UUID =
+            UUID.fromString("7a1c4b20-1122-4334-9556-88aabbcc0003");
+    private static final UUID STURDY_ARMOR_ADD_UUID =
+            UUID.fromString("7a1c4b20-1122-4334-9556-88aabbcc0004");
+    private static final UUID STURDY_ARMOR_MULT_UUID =
+            UUID.fromString("7a1c4b20-1122-4334-9556-88aabbcc0005");
+    private static final UUID STURDY_TOUGH_ADD_UUID =
+            UUID.fromString("7a1c4b20-1122-4334-9556-88aabbcc0006");
+    private static final UUID STURDY_TOUGH_MULT_UUID =
+            UUID.fromString("7a1c4b20-1122-4334-9556-88aabbcc0007");
+    private static final UUID VITALITY_HEALTH_ADD_UUID =
+            UUID.fromString("7a1c4b20-1122-4334-9556-88aabbcc0008");
+    private static final UUID VITALITY_HEALTH_MULT_UUID =
+            UUID.fromString("7a1c4b20-1122-4334-9556-88aabbcc0009");
 
     private HostilityScaler() {
     }
@@ -40,6 +56,12 @@ public final class HostilityScaler {
         }
         cap.initialized = true;
         cap.lastDamageTick = entity.level().getGameTime();
+        cap.lastInspireTick = entity.level().getGameTime();
+
+        if (cap.inspireSummoned) {
+            cap.level = 0;
+            return;
+        }
 
         if (!(entity.level() instanceof ServerLevel serverLevel)) {
             return;
@@ -73,9 +95,43 @@ public final class HostilityScaler {
 
         if (level >= ModConfig.COMMON.traitMinLevel.get()) {
             rollTraits(cap, level, random);
+            applyTraitSpawnAttributes(entity, cap);
         }
 
         syncToTracking(entity, cap);
+    }
+
+    private static void applyTraitSpawnAttributes(LivingEntity entity, MobTraitCapability cap) {
+        if (cap.hasTrait(TraitType.STEP_UP)) {
+            addPermanentModifier(entity, ForgeMod.STEP_HEIGHT_ADDITION.get(), STEP_UP_UUID,
+                    "rohostility_step_up", 100.0, AttributeModifier.Operation.ADDITION);
+        }
+        if (cap.hasTrait(TraitType.STURDY)) {
+            addPermanentModifier(entity, Attributes.ARMOR, STURDY_ARMOR_ADD_UUID,
+                    "rohostility_sturdy_armor_add", 8.0, AttributeModifier.Operation.ADDITION);
+            addPermanentModifier(entity, Attributes.ARMOR, STURDY_ARMOR_MULT_UUID,
+                    "rohostility_sturdy_armor_mult", 0.10, AttributeModifier.Operation.MULTIPLY_TOTAL);
+            addPermanentModifier(entity, Attributes.ARMOR_TOUGHNESS, STURDY_TOUGH_ADD_UUID,
+                    "rohostility_sturdy_tough_add", 8.0, AttributeModifier.Operation.ADDITION);
+            addPermanentModifier(entity, Attributes.ARMOR_TOUGHNESS, STURDY_TOUGH_MULT_UUID,
+                    "rohostility_sturdy_tough_mult", 0.10, AttributeModifier.Operation.MULTIPLY_TOTAL);
+        }
+        if (cap.hasTrait(TraitType.VITALITY)) {
+            addPermanentModifier(entity, Attributes.MAX_HEALTH, VITALITY_HEALTH_ADD_UUID,
+                    "rohostility_vitality_health_add", 10.0, AttributeModifier.Operation.ADDITION);
+            addPermanentModifier(entity, Attributes.MAX_HEALTH, VITALITY_HEALTH_MULT_UUID,
+                    "rohostility_vitality_health_mult", 0.10, AttributeModifier.Operation.MULTIPLY_TOTAL);
+            entity.setHealth(entity.getMaxHealth());
+        }
+    }
+
+    private static void addPermanentModifier(LivingEntity entity, Attribute attr, UUID uuid,
+                                             String name, double amount, AttributeModifier.Operation op) {
+        AttributeInstance inst = entity.getAttribute(attr);
+        if (inst != null) {
+            inst.removeModifier(uuid);
+            inst.addPermanentModifier(new AttributeModifier(uuid, name, amount, op));
+        }
     }
 
     private static ServerPlayer findNearestUnlockedPlayer(ServerLevel level, LivingEntity entity) {
