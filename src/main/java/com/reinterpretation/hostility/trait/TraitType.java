@@ -6,15 +6,15 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 
 public enum TraitType {
-    REVIVE("revive", 80, 40, 0xFFD700),
-    REGENERATION("regeneration", 25, 100, 0xFF5577),
-    ADAPTATION("adaptation", 40, 80, 0x55CCFF),
-    APOCALYPSE("apocalypse", 60, 60, 0xAA33FF),
-    DESTRUCTION("destruction", 50, 70, 0xFF6600),
-    UNREALITY("unreality", 65, 55, 0xCC77FF),
-    FORTITUDE("fortitude", 75, 50, 0x8899AA),
-    PROTECTION("protection", 75, 50, 0x5588FF),
-    PLUNDER("plunder", 100, 35, 0xCC1133);
+    REVIVE("revive", 150, 40, 0xFFD700),
+    REGENERATION("regeneration", 50, 100, 0xFF5577),
+    ADAPTATION("adaptation", 150, 80, 0x55CCFF),
+    APOCALYPSE("apocalypse", 300, 60, 0xAA33FF),
+    DESTRUCTION("destruction", 150, 70, 0xFF6600),
+    UNREALITY("unreality", 200, 55, 0xCC77FF),
+    FORTITUDE("fortitude", 150, 50, 0x8899AA),
+    PROTECTION("protection", 150, 50, 0x5588FF),
+    PLUNDER("plunder", 400, 35, 0xCC1133);
 
     private final String id;
     private final int defaultCost;

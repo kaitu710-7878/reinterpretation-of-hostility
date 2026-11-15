@@ -1,5 +1,23 @@
 # Changelog / 変更履歴
 
+## [0.1.1-alpha] - 2026-11-15
+
+### 日本語
+- 各特性のデフォルトコストをレベル帯イメージに合わせて調整：
+  - 修復力: `50`
+  - 復活・学習・破壊・強固・加護: `150`
+  - 非現実特攻: `200`
+  - 黙示録: `300`
+  - 奪取: `400`
+
+### English
+- Adjusted default trait costs to match target level tiers:
+  - Regeneration: `50`
+  - Revive, Adaptation, Destruction, Fortitude, Protection: `150`
+  - Unreality: `200`
+  - Apocalypse: `300`
+  - Plunder: `400`
+
 ## [0.1.0-alpha] - 2026-11-15
 
 ### 日本語
