@@ -3,18 +3,20 @@ package com.reinterpretation.hostility.capability;
 import com.google.common.collect.Multimap;
 import com.reinterpretation.hostility.ReinterpretationOfHostility;
 import com.reinterpretation.hostility.compat.CuriosCompat;
+import com.reinterpretation.hostility.item.ModItems;
+import com.reinterpretation.hostility.item.SealedItem;
 import dev.xkmc.l2library.capability.entity.GeneralCapabilityHolder;
 import dev.xkmc.l2library.capability.entity.GeneralCapabilityTemplate;
 import dev.xkmc.l2serial.serialization.SerialClass;
 import dev.xkmc.l2serial.serialization.SerialClass.SerialField;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.common.capabilities.CapabilityManager;
@@ -40,11 +42,11 @@ public class EntityDebuffCapability extends GeneralCapabilityTemplate<LivingEnti
 
     private static final UUID PLUNDER_MODIFIER_UUID =
             UUID.fromString("9e2f8a10-4b2c-4d3e-9a11-71f0e3a20101");
-    private static final UUID SLOT_PENALTY_ADD_UUID =
+    private static final UUID APOCALYPSE_ADD_UUID =
             UUID.fromString("9e2f8a10-4b2c-4d3e-9a11-71f0e3a20201");
-    private static final UUID SLOT_PENALTY_MULT_BASE_UUID =
+    private static final UUID APOCALYPSE_MULT_BASE_UUID =
             UUID.fromString("9e2f8a10-4b2c-4d3e-9a11-71f0e3a20202");
-    private static final UUID SLOT_PENALTY_MULT_TOTAL_UUID =
+    private static final UUID APOCALYPSE_MULT_TOTAL_UUID =
             UUID.fromString("9e2f8a10-4b2c-4d3e-9a11-71f0e3a20203");
 
     @SerialField
@@ -53,10 +55,7 @@ public class EntityDebuffCapability extends GeneralCapabilityTemplate<LivingEnti
     @SerialField
     public HashMap<String, Long> apocalypseSlots = new HashMap<>();
 
-    @SerialField
-    public HashMap<String, Long> sealedSlots = new HashMap<>();
-
-    private final Set<Attribute> appliedPenaltyAttributes = new HashSet<>();
+    private final Set<Attribute> appliedApocalypseAttributes = new HashSet<>();
 
     public static EntityDebuffCapability get(LivingEntity entity) {
         return HOLDER.get(entity);
@@ -80,28 +79,76 @@ public class EntityDebuffCapability extends GeneralCapabilityTemplate<LivingEnti
 
     public void applyApocalypse(LivingEntity entity, String slotKey, long gameTime) {
         apocalypseSlots.put(slotKey, gameTime + 100L); // 5 seconds
-        updateSlotPenaltyModifiers(entity);
+        updateApocalypseModifiers(entity);
     }
 
     public void applySeal(LivingEntity entity, String slotKey, long gameTime) {
-        sealedSlots.put(slotKey, gameTime + 5L); // 5 ticks
-        updateSlotPenaltyModifiers(entity);
+        long expireTick = gameTime + 5L; // 5 ticks
+        if (slotKey.startsWith("vanilla:")) {
+            EquipmentSlot slot = EquipmentSlot.byName(slotKey.substring("vanilla:".length()));
+            ItemStack current = entity.getItemBySlot(slot);
+            if (!current.isEmpty() && !current.is(ModItems.SEALED_ITEM.get())) {
+                entity.setItemSlot(slot, SealedItem.createSealed(current, expireTick));
+            }
+        } else if (slotKey.startsWith("curios:") && CuriosCompat.isLoaded()) {
+            String rest = slotKey.substring("curios:".length());
+            int lastColon = rest.lastIndexOf(':');
+            if (lastColon <= 0) {
+                return;
+            }
+            String slotId = rest.substring(0, lastColon);
+            int index;
+            try {
+                index = Integer.parseInt(rest.substring(lastColon + 1));
+            } catch (NumberFormatException e) {
+                return;
+            }
+            CuriosCompat.replaceCurioSlot(entity, slotId, index, current -> {
+                if (!current.isEmpty() && !current.is(ModItems.SEALED_ITEM.get())) {
+                    return SealedItem.createSealed(current, expireTick);
+                }
+                return null;
+            });
+        }
     }
 
-    public boolean isHandSealed(InteractionHand hand, long gameTime) {
-        String key = hand == InteractionHand.MAIN_HAND
-                ? "vanilla:" + EquipmentSlot.MAINHAND.getName()
-                : "vanilla:" + EquipmentSlot.OFFHAND.getName();
-        Long expire = sealedSlots.get(key);
-        return expire != null && gameTime < expire;
+    public void restoreSealedItems(LivingEntity entity, long gameTime, boolean force) {
+        if (entity instanceof Player player) {
+            for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
+                ItemStack stack = player.getInventory().getItem(i);
+                if (stack.is(ModItems.SEALED_ITEM.get()) && (force || SealedItem.isExpired(stack, gameTime))) {
+                    player.getInventory().setItem(i, SealedItem.unwrap(stack));
+                }
+            }
+            ItemStack carried = player.containerMenu.getCarried();
+            if (carried.is(ModItems.SEALED_ITEM.get()) && (force || SealedItem.isExpired(carried, gameTime))) {
+                player.containerMenu.setCarried(SealedItem.unwrap(carried));
+            }
+        } else {
+            for (EquipmentSlot slot : EquipmentSlot.values()) {
+                ItemStack stack = entity.getItemBySlot(slot);
+                if (stack.is(ModItems.SEALED_ITEM.get()) && (force || SealedItem.isExpired(stack, gameTime))) {
+                    entity.setItemSlot(slot, SealedItem.unwrap(stack));
+                }
+            }
+        }
+
+        if (CuriosCompat.isLoaded()) {
+            CuriosCompat.iterateCurioSlots(entity, current -> {
+                if (current.is(ModItems.SEALED_ITEM.get()) && (force || SealedItem.isExpired(current, gameTime))) {
+                    return SealedItem.unwrap(current);
+                }
+                return null;
+            });
+        }
     }
 
     public void clearAll(LivingEntity entity) {
         plunderExpireTicks.clear();
         apocalypseSlots.clear();
-        sealedSlots.clear();
         updatePlunderModifier(entity);
-        updateSlotPenaltyModifiers(entity);
+        updateApocalypseModifiers(entity);
+        restoreSealedItems(entity, 0L, true);
     }
 
     public void tick(LivingEntity entity) {
@@ -110,6 +157,8 @@ public class EntityDebuffCapability extends GeneralCapabilityTemplate<LivingEnti
         }
         long gameTime = entity.level().getGameTime();
 
+        restoreSealedItems(entity, gameTime, false);
+
         if (!plunderExpireTicks.isEmpty()) {
             boolean removed = plunderExpireTicks.removeIf(expire -> gameTime >= expire);
             if (removed) {
@@ -117,12 +166,11 @@ public class EntityDebuffCapability extends GeneralCapabilityTemplate<LivingEnti
             }
         }
 
-        boolean hadSlotPenalties = !apocalypseSlots.isEmpty() || !sealedSlots.isEmpty();
-        apocalypseSlots.entrySet().removeIf(entry -> gameTime >= entry.getValue());
-        sealedSlots.entrySet().removeIf(entry -> gameTime >= entry.getValue());
-
-        if (hadSlotPenalties || !appliedPenaltyAttributes.isEmpty()) {
-            updateSlotPenaltyModifiers(entity);
+        if (!apocalypseSlots.isEmpty()) {
+            apocalypseSlots.entrySet().removeIf(entry -> gameTime >= entry.getValue());
+            updateApocalypseModifiers(entity);
+        } else if (!appliedApocalypseAttributes.isEmpty()) {
+            updateApocalypseModifiers(entity);
         }
     }
 
@@ -134,7 +182,6 @@ public class EntityDebuffCapability extends GeneralCapabilityTemplate<LivingEnti
         instance.removeModifier(PLUNDER_MODIFIER_UUID);
         int count = plunderExpireTicks.size();
         if (count > 0) {
-            // Subtracts 1% of final value per stack
             double factor = Math.max(-0.99, -0.01 * count);
             instance.addTransientModifier(new AttributeModifier(
                     PLUNDER_MODIFIER_UUID,
@@ -148,28 +195,24 @@ public class EntityDebuffCapability extends GeneralCapabilityTemplate<LivingEnti
         }
     }
 
-    private void updateSlotPenaltyModifiers(LivingEntity entity) {
-        for (Attribute attr : appliedPenaltyAttributes) {
+    private void updateApocalypseModifiers(LivingEntity entity) {
+        for (Attribute attr : appliedApocalypseAttributes) {
             AttributeInstance inst = entity.getAttribute(attr);
             if (inst != null) {
-                inst.removeModifier(SLOT_PENALTY_ADD_UUID);
-                inst.removeModifier(SLOT_PENALTY_MULT_BASE_UUID);
-                inst.removeModifier(SLOT_PENALTY_MULT_TOTAL_UUID);
+                inst.removeModifier(APOCALYPSE_ADD_UUID);
+                inst.removeModifier(APOCALYPSE_MULT_BASE_UUID);
+                inst.removeModifier(APOCALYPSE_MULT_TOTAL_UUID);
             }
         }
-        appliedPenaltyAttributes.clear();
+        appliedApocalypseAttributes.clear();
 
-        if (apocalypseSlots.isEmpty() && sealedSlots.isEmpty()) {
+        if (apocalypseSlots.isEmpty()) {
             return;
         }
 
-        Set<String> allAffectedSlots = new HashSet<>(apocalypseSlots.keySet());
-        allAffectedSlots.addAll(sealedSlots.keySet());
-
         Map<Attribute, double[]> penalties = new HashMap<>();
 
-        for (String slotKey : allAffectedSlots) {
-            double ratio = sealedSlots.containsKey(slotKey) ? 1.0 : 0.1;
+        for (String slotKey : apocalypseSlots.keySet()) {
             Multimap<Attribute, AttributeModifier> mods = getSlotModifiers(entity, slotKey);
             if (mods == null || mods.isEmpty()) {
                 continue;
@@ -181,9 +224,9 @@ public class EntityDebuffCapability extends GeneralCapabilityTemplate<LivingEnti
                 }
                 double[] sums = penalties.computeIfAbsent(entry.getKey(), k -> new double[3]);
                 switch (mod.getOperation()) {
-                    case ADDITION -> sums[0] += mod.getAmount() * ratio;
-                    case MULTIPLY_BASE -> sums[1] += mod.getAmount() * ratio;
-                    case MULTIPLY_TOTAL -> sums[2] += mod.getAmount() * ratio;
+                    case ADDITION -> sums[0] += mod.getAmount() * 0.1;
+                    case MULTIPLY_BASE -> sums[1] += mod.getAmount() * 0.1;
+                    case MULTIPLY_TOTAL -> sums[2] += mod.getAmount() * 0.1;
                 }
             }
         }
@@ -198,25 +241,25 @@ public class EntityDebuffCapability extends GeneralCapabilityTemplate<LivingEnti
             boolean applied = false;
             if (sums[0] > 0.0) {
                 inst.addTransientModifier(new AttributeModifier(
-                        SLOT_PENALTY_ADD_UUID, "rohostility_slot_penalty_add",
+                        APOCALYPSE_ADD_UUID, "rohostility_apocalypse_add",
                         -sums[0], AttributeModifier.Operation.ADDITION));
                 applied = true;
             }
             if (sums[1] > 0.0) {
                 inst.addTransientModifier(new AttributeModifier(
-                        SLOT_PENALTY_MULT_BASE_UUID, "rohostility_slot_penalty_base",
+                        APOCALYPSE_MULT_BASE_UUID, "rohostility_apocalypse_base",
                         -sums[1], AttributeModifier.Operation.MULTIPLY_BASE));
                 applied = true;
             }
             if (sums[2] > 0.0) {
                 double factor = Math.max(-0.99, -sums[2] / (1.0 + sums[2]));
                 inst.addTransientModifier(new AttributeModifier(
-                        SLOT_PENALTY_MULT_TOTAL_UUID, "rohostility_slot_penalty_total",
+                        APOCALYPSE_MULT_TOTAL_UUID, "rohostility_apocalypse_total",
                         factor, AttributeModifier.Operation.MULTIPLY_TOTAL));
                 applied = true;
             }
             if (applied) {
-                appliedPenaltyAttributes.add(attr);
+                appliedApocalypseAttributes.add(attr);
             }
         }
 
@@ -256,19 +299,20 @@ public class EntityDebuffCapability extends GeneralCapabilityTemplate<LivingEnti
         return null;
     }
 
-    /**
-     * Collects all currently equipped slot keys (vanilla + curios) that have positive attribute modifiers.
-     */
     public static List<String> collectWeakenableSlots(LivingEntity entity) {
         List<String> slots = new ArrayList<>();
         for (EquipmentSlot slot : EquipmentSlot.values()) {
             ItemStack stack = entity.getItemBySlot(slot);
-            if (!stack.isEmpty() && hasPositiveModifiers(stack.getAttributeModifiers(slot))) {
+            if (!stack.isEmpty() && !stack.is(ModItems.SEALED_ITEM.get())
+                    && hasPositiveModifiers(stack.getAttributeModifiers(slot))) {
                 slots.add("vanilla:" + slot.getName());
             }
         }
         if (CuriosCompat.isLoaded()) {
             for (CuriosCompat.CurioSlotEntry entry : CuriosCompat.getEquippedCurios(entity)) {
+                if (entry.stack().is(ModItems.SEALED_ITEM.get())) {
+                    continue;
+                }
                 String rest = entry.slotKey().substring("curios:".length());
                 int lastColon = rest.lastIndexOf(':');
                 String slotId = rest.substring(0, lastColon);
@@ -281,19 +325,19 @@ public class EntityDebuffCapability extends GeneralCapabilityTemplate<LivingEnti
         return slots;
     }
 
-    /**
-     * Collects all non-empty equipped slot keys (vanilla + curios) for Seal.
-     */
     public static List<String> collectAllEquippedSlots(LivingEntity entity) {
         List<String> slots = new ArrayList<>();
         for (EquipmentSlot slot : EquipmentSlot.values()) {
-            if (!entity.getItemBySlot(slot).isEmpty()) {
+            ItemStack stack = entity.getItemBySlot(slot);
+            if (!stack.isEmpty() && !stack.is(ModItems.SEALED_ITEM.get())) {
                 slots.add("vanilla:" + slot.getName());
             }
         }
         if (CuriosCompat.isLoaded()) {
             for (CuriosCompat.CurioSlotEntry entry : CuriosCompat.getEquippedCurios(entity)) {
-                slots.add(entry.slotKey());
+                if (!entry.stack().is(ModItems.SEALED_ITEM.get())) {
+                    slots.add(entry.slotKey());
+                }
             }
         }
         return slots;

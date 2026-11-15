@@ -14,6 +14,9 @@
   "effect.rohostility.revive_prevention": "復活阻止",
   "effect.rohostility.curse": "呪詛",
 
+  "item.rohostility.sealed_item": "封印されたアイテム",
+  "item.rohostility.sealed_item.desc": "一時的に封印されています。まもなく元の状態に戻ります。",
+
   "death.attack.rohostility.armor_pierce": "%1$s は %2$s の装甲貫通攻撃に貫かれた",
   "death.attack.rohostility.protection_pierce": "%1$s は %2$s の加護貫通攻撃に打ち砕かれた",
 

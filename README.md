@@ -35,7 +35,11 @@ A Minecraft 1.20.1 (Forge) enemy-scaling mod reinterpreting **L2Hostility**. It 
 2. **L2Library**（および任意で Curios API）を `mods` フォルダに入れます。
 3. 本MODの JAR ファイル（`rohostility-<version>.jar`）を `mods` フォルダに配置します。
 
-## ライセンス / License
+## ライセンス・帰属表記 / License & Attribution
 
 本プロジェクトは **GNU Lesser General Public License v2.1 (LGPL-2.1)** の下で公開されています。詳細は `LICENSE` ファイルをご確認ください。  
 This project is licensed under the **GNU Lesser General Public License v2.1 (LGPL-2.1)**. See `LICENSE` for details.
+
+- **テクスチャ流用表記 / Texture Attribution**:
+  - 状態異常「呪詛 (`curse.png`)」のアイコンテクスチャは、**L2Complements**（Minecraft-LightLand 著 / LGPL-2.1）の呪い (`curse.png`) テクスチャを流用しています。
+  - The status effect icon for **Curse (`curse.png`)** is reused from **L2Complements** (by Minecraft-LightLand, licensed under LGPL-2.1).

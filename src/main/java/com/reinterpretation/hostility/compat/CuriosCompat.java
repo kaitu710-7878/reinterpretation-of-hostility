@@ -17,6 +17,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.function.Function;
 
 public final class CuriosCompat {
 
@@ -49,6 +50,21 @@ public final class CuriosCompat {
         return Inner.getModifiers(entity, slotId, index, stack);
     }
 
+    public static boolean replaceCurioSlot(LivingEntity entity, String slotId, int index,
+                                          Function<ItemStack, ItemStack> replacer) {
+        if (!CURIOS_LOADED) {
+            return false;
+        }
+        return Inner.replaceSlot(entity, slotId, index, replacer);
+    }
+
+    public static void iterateCurioSlots(LivingEntity entity, Function<ItemStack, ItemStack> replacer) {
+        if (!CURIOS_LOADED) {
+            return;
+        }
+        Inner.iterateSlots(entity, replacer);
+    }
+
     private static final class Inner {
         static void collectEquipped(LivingEntity entity, List<CurioSlotEntry> out) {
             CuriosApi.getCuriosInventory(entity).ifPresent((ICuriosItemHandler handler) -> {
@@ -70,6 +86,40 @@ public final class CuriosCompat {
             SlotContext ctx = new SlotContext(slotId, entity, index, false, true);
             UUID uuid = UUID.nameUUIDFromBytes(("rohostility_curio_" + slotId + "_" + index).getBytes());
             return CuriosApi.getAttributeModifiers(ctx, uuid, stack);
+        }
+
+        static boolean replaceSlot(LivingEntity entity, String slotId, int index,
+                                   Function<ItemStack, ItemStack> replacer) {
+            final boolean[] changed = {false};
+            CuriosApi.getCuriosInventory(entity).ifPresent((ICuriosItemHandler handler) -> {
+                handler.getStacksHandler(slotId).ifPresent(stacksHandler -> {
+                    IDynamicStackHandler stacks = stacksHandler.getStacks();
+                    if (index >= 0 && index < stacks.getSlots()) {
+                        ItemStack current = stacks.getStackInSlot(index);
+                        ItemStack next = replacer.apply(current);
+                        if (next != null) {
+                            stacks.setStackInSlot(index, next);
+                            changed[0] = true;
+                        }
+                    }
+                });
+            });
+            return changed[0];
+        }
+
+        static void iterateSlots(LivingEntity entity, Function<ItemStack, ItemStack> replacer) {
+            CuriosApi.getCuriosInventory(entity).ifPresent((ICuriosItemHandler handler) -> {
+                for (ICurioStacksHandler stacksHandler : handler.getCurios().values()) {
+                    IDynamicStackHandler stacks = stacksHandler.getStacks();
+                    for (int i = 0; i < stacks.getSlots(); i++) {
+                        ItemStack current = stacks.getStackInSlot(i);
+                        ItemStack next = replacer.apply(current);
+                        if (next != null) {
+                            stacks.setStackInSlot(i, next);
+                        }
+                    }
+                }
+            });
         }
     }
 }

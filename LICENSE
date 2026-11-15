@@ -8,3 +8,7 @@ of this license document, but changing it is not allowed.
 
 This project is licensed under the GNU Lesser General Public License v2.1 (LGPL-2.1).
 Full license text: https://www.gnu.org/licenses/old-licenses/lgpl-2.1.txt
+
+Third-party Asset Attribution:
+- assets/rohostility/textures/mob_effect/curse.png is reused from L2Complements
+  (https://github.com/Minecraft-LightLand/L2Complements), licensed under LGPL-2.1.

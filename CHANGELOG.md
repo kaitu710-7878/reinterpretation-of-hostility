@@ -1,5 +1,19 @@
 # Changelog / 変更履歴
 
+## [0.1.3-alpha] - 2026-11-16
+
+### 日本語
+- **加護貫通 (`protection_pierce`)**: `bypasses_armor` タグから除外し、エンチャントや魔法耐性・ポーション耐性は貫通しつつ物理防御（Armor）の影響を受けるよう修正。
+- **狂戦士 (`berserker`)**: 毎秒 0.1% 回復がダメージを受けてから 3秒間（60 tick）停止するよう修正。
+- **封印 (`seal`)**: 本家ラグナロク方式（専用封印アイテム `rohostility:sealed_item` への一時差し替え＆5 tick 後の自動復元）に強化し、Attribute 以外のエンチャント・防具・Curios 固有効果も完全に封印するよう変更。
+- ドキュメント（`README.md` / `LICENSE`）に L2Complements の `curse.png` 流用表記を明記。
+
+### English
+- **Protection Pierce**: Removed from `bypasses_armor` tag so it pierces enchantments/effects/resistance while still respecting physical Armor.
+- **Berserker**: Stopped passive 0.1%/s regeneration for 3 seconds (60 ticks) after taking damage.
+- **Seal**: Upgraded to Ragnarok-style item sealing (`rohostility:sealed_item` temporary replacement with automatic unwrap after 5 ticks) to block all non-attribute gear/Curio effects as well.
+- Added attribution for reusing `curse.png` from L2Complements (LGPL-2.1) in `README.md` and `LICENSE`.
+
 ## [0.1.2-alpha] - 2026-11-16
 
 ### 日本語

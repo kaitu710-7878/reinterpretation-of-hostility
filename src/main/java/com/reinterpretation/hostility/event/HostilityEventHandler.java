@@ -7,6 +7,8 @@ import com.reinterpretation.hostility.capability.PlayerDifficultyCapability;
 import com.reinterpretation.hostility.config.ModConfig;
 import com.reinterpretation.hostility.damage.ModDamageTypes;
 import com.reinterpretation.hostility.effect.ModEffects;
+import com.reinterpretation.hostility.item.ModItems;
+import com.reinterpretation.hostility.item.SealedItem;
 import com.reinterpretation.hostility.logic.HostilityScaler;
 import com.reinterpretation.hostility.network.NetworkHandler;
 import com.reinterpretation.hostility.network.SyncMobTraitsS2CPacket;
@@ -19,7 +21,6 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.tags.DamageTypeTags;
 import net.minecraft.util.RandomSource;
-import net.minecraft.world.InteractionHand;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.damagesource.DamageTypes;
 import net.minecraft.world.effect.MobEffect;
@@ -34,20 +35,21 @@ import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.monster.Vex;
-import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraftforge.common.ForgeMod;
 import net.minecraftforge.event.entity.EntityJoinLevelEvent;
+import net.minecraftforge.event.entity.item.ItemTossEvent;
 import net.minecraftforge.event.entity.living.LivingAttackEvent;
 import net.minecraftforge.event.entity.living.LivingDeathEvent;
+import net.minecraftforge.event.entity.living.LivingDropsEvent;
 import net.minecraftforge.event.entity.living.LivingEvent;
 import net.minecraftforge.event.entity.living.LivingHealEvent;
 import net.minecraftforge.event.entity.living.LivingHurtEvent;
 import net.minecraftforge.event.entity.living.LivingUseTotemEvent;
-import net.minecraftforge.event.entity.player.AttackEntityEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
-import net.minecraftforge.event.entity.player.PlayerInteractEvent;
 import net.minecraftforge.eventbus.api.EventPriority;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
@@ -120,34 +122,19 @@ public final class HostilityEventHandler {
     }
 
     @SubscribeEvent
-    public static void onPlayerAttackEntity(AttackEntityEvent event) {
-        Player player = event.getEntity();
-        if (!player.level().isClientSide()) {
-            long gameTime = player.level().getGameTime();
-            if (EntityDebuffCapability.get(player).isHandSealed(InteractionHand.MAIN_HAND, gameTime)) {
-                event.setCanceled(true);
-            }
+    public static void onItemToss(ItemTossEvent event) {
+        ItemStack stack = event.getEntity().getItem();
+        if (stack.is(ModItems.SEALED_ITEM.get())) {
+            event.getEntity().setItem(SealedItem.unwrap(stack));
         }
     }
 
     @SubscribeEvent
-    public static void onRightClickItem(PlayerInteractEvent.RightClickItem event) {
-        Player player = event.getEntity();
-        if (!player.level().isClientSide()) {
-            long gameTime = player.level().getGameTime();
-            if (EntityDebuffCapability.get(player).isHandSealed(event.getHand(), gameTime)) {
-                event.setCanceled(true);
-            }
-        }
-    }
-
-    @SubscribeEvent
-    public static void onRightClickBlock(PlayerInteractEvent.RightClickBlock event) {
-        Player player = event.getEntity();
-        if (!player.level().isClientSide()) {
-            long gameTime = player.level().getGameTime();
-            if (EntityDebuffCapability.get(player).isHandSealed(event.getHand(), gameTime)) {
-                event.setCanceled(true);
+    public static void onLivingDrops(LivingDropsEvent event) {
+        for (ItemEntity drop : event.getDrops()) {
+            ItemStack stack = drop.getItem();
+            if (stack.is(ModItems.SEALED_ITEM.get())) {
+                drop.setItem(SealedItem.unwrap(stack));
             }
         }
     }
@@ -187,7 +174,7 @@ public final class HostilityEventHandler {
             }
 
             if (cap.hasTrait(TraitType.BERSERKER) && entity.isAlive()) {
-                tickBerserker(entity, gameTime);
+                tickBerserker(entity, cap, gameTime);
             }
 
             if (cap.hasTrait(TraitType.INSPIRE) && entity.isAlive() && entity instanceof Mob mob) {
@@ -196,7 +183,7 @@ public final class HostilityEventHandler {
         }
     }
 
-    private static void tickBerserker(LivingEntity entity, long gameTime) {
+    private static void tickBerserker(LivingEntity entity, MobTraitCapability cap, long gameTime) {
         boolean active = entity.getHealth() < entity.getMaxHealth() * 0.5f;
         if (active) {
             setTransientModifier(entity, Attributes.ATTACK_DAMAGE, BERSERKER_DMG_UUID,
@@ -205,7 +192,9 @@ public final class HostilityEventHandler {
                     "rohostility_berserker_spd", 0.10, AttributeModifier.Operation.ADDITION);
             setTransientModifier(entity, ForgeMod.ENTITY_REACH.get(), BERSERKER_RNG_UUID,
                     "rohostility_berserker_rng", 1.0, AttributeModifier.Operation.ADDITION);
-            if (gameTime % 20L == 0L && entity.getHealth() < entity.getMaxHealth()) {
+            if (gameTime % 20L == 0L
+                    && gameTime - cap.lastDamageTick >= 60L
+                    && entity.getHealth() < entity.getMaxHealth()) {
                 entity.heal(entity.getMaxHealth() * 0.001f);
             }
         } else {
