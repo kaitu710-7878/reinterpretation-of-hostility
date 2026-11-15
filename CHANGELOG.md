@@ -1,5 +1,17 @@
 # Changelog / 変更履歴
 
+## [0.2.0-beta] - 2026-11-16
+
+### 日本語
+- **ベータ版リリース (`0.2.0-beta`)**
+- 状態異常「呪詛 (`curse.png`)」および「復活阻止 (`revive_prevention.png`)」の 16×16 アイコンテクスチャを正式登録。
+- 全体コードレビューおよびクリーンビルド検証を実施。
+
+### English
+- **Beta Release (`0.2.0-beta`)**
+- Registered 16x16 status effect icon textures for Curse (`curse.png`) and Revive Prevention (`revive_prevention.png`).
+- Completed full code review and clean build verification.
+
 ## [0.1.3-alpha] - 2026-11-16
 
 ### 日本語
