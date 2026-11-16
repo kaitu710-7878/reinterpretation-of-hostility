@@ -52,11 +52,8 @@ public final class ClientEvents {
                 return;
             }
             LivingEntity entity = event.getEntity();
-            if (!MobTraitCapability.hasCap(entity)) {
-                return;
-            }
-            MobTraitCapability cap = MobTraitCapability.get(entity);
-            if (!cap.initialized || cap.level <= 0) {
+            MobTraitCapability cap = MobTraitCapability.getOrNull(entity);
+            if (cap == null || !cap.initialized || cap.level <= 0) {
                 return;
             }
 

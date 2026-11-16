@@ -13,16 +13,14 @@ The configuration file is generated at `config/rohostility-common.toml`.
 | `maxDangerCap` | Double (`1.0..100000.0`) | `2000.0` | 蓄積危険度のストッパー上限 / Hard cap for accumulated danger points |
 | `traitMinLevel` | Integer (`1..10000`) | `90` | 特性が出現し始める最低レベル / Minimum level for traits to appear |
 | `maxTraitCount` | Integer (`1..20`) | `8` | 1体のモブに付与される最大特性数 / Maximum traits per mob |
-| `difficultyGainMultiplier` | Double (`0.0..100.0`) | `0.5` | 敵討伐時の危険度上昇量への全体倍率 / Global multiplier for kill danger gain |
-| `baseKillDifficultyGain` | Double (`0.0..1000.0`) | `1.0` | 1体討伐あたりの基礎危険度上昇量 / Base danger points per kill |
-| `mobLevelKillBonus` | Double (`0.0..100.0`) | `0.05` | 倒したモブのレベル1あたりの追加危険度 / Bonus danger points per mob level |
+| `killsPerLevel` | Integer (`1..100000`) | `60` | 同レベルモブ何体討伐で危険度が1上がるか（本家30の倍緩やか） / Kills of same-level mob per danger level (original=30, 60=half pace) |
 | `levelRandomVariance` | Integer (`0..100`) | `5` | スポーン時のレベルランダム振れ幅（±） / Random level variance (+/-) |
 
 ## `[scaling]` - ステータス補正 / Stat Scaling
 
 | パラメータ / Key | 型 / Type | デフォルト / Default | 説明 / Description |
 | --- | --- | --- | --- |
-| `healthBonusPerLevel` | Double (`0.0..10.0`) | `0.05` | レベル1あたりの最大HP増加率（0.05 = +5%） / Max HP bonus per level |
+| `healthBonusPerLevel` | Double (`0.0..10.0`) | `0.03` | レベル1あたりの最大HP増加率（0.03 = +3%、本家準拠） / Max HP bonus per level |
 | `damageBonusPerLevel` | Double (`0.0..10.0`) | `0.02` | レベル1あたりの攻撃力増加率（0.02 = +2%） / Attack damage bonus per level |
 | `statScalingModifier` | Double (`0.0..100.0`) | `1.0` | 上記ステータス上昇量への全体倍率補正（1.0未満で弱体化、1.0超で強化） / Overall multiplier for stat scaling (<1.0 weakens, >1.0 strengthens) |
 

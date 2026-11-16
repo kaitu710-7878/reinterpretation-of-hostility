@@ -21,9 +21,7 @@ public class ModConfig {
         public final ForgeConfigSpec.DoubleValue maxDangerCap;
         public final ForgeConfigSpec.IntValue traitMinLevel;
         public final ForgeConfigSpec.IntValue maxTraitCount;
-        public final ForgeConfigSpec.DoubleValue difficultyGainMultiplier;
-        public final ForgeConfigSpec.DoubleValue baseKillDifficultyGain;
-        public final ForgeConfigSpec.DoubleValue mobLevelKillBonus;
+        public final ForgeConfigSpec.IntValue killsPerLevel;
 
         public final ForgeConfigSpec.DoubleValue healthBonusPerLevel;
         public final ForgeConfigSpec.DoubleValue damageBonusPerLevel;
@@ -55,17 +53,9 @@ public class ModConfig {
                     .comment("Maximum number of traits a single mob can receive.")
                     .defineInRange("maxTraitCount", 8, 1, 20);
 
-            difficultyGainMultiplier = builder
-                    .comment("Global multiplier for danger/difficulty gain from killing mobs (0.5 = half of original pace).")
-                    .defineInRange("difficultyGainMultiplier", 0.5, 0.0, 100.0);
-
-            baseKillDifficultyGain = builder
-                    .comment("Base danger points gained per hostile mob kill before multiplier.")
-                    .defineInRange("baseKillDifficultyGain", 1.0, 0.0, 1000.0);
-
-            mobLevelKillBonus = builder
-                    .comment("Additional danger points gained per level of the killed mob before multiplier.")
-                    .defineInRange("mobLevelKillBonus", 0.05, 0.0, 100.0);
+            killsPerLevel = builder
+                    .comment("Kills of same-level mob required per danger level (original L2H = 30, 60 = half pace).")
+                    .defineInRange("killsPerLevel", 60, 1, 100000);
 
             levelRandomVariance = builder
                     .comment("Random level variance (+/-) applied when mobs spawn.")
@@ -77,8 +67,8 @@ public class ModConfig {
                     .push("scaling");
 
             healthBonusPerLevel = builder
-                    .comment("Base max health bonus per mob level (0.05 = +5% per level).")
-                    .defineInRange("healthBonusPerLevel", 0.05, 0.0, 10.0);
+                    .comment("Base max health bonus per mob level (0.03 = +3% per level, matching original L2H).")
+                    .defineInRange("healthBonusPerLevel", 0.03, 0.0, 10.0);
 
             damageBonusPerLevel = builder
                     .comment("Base attack damage bonus per mob level (0.02 = +2% per level).")

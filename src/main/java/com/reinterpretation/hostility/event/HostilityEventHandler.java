@@ -15,6 +15,9 @@ import com.reinterpretation.hostility.network.SyncMobTraitsS2CPacket;
 import com.reinterpretation.hostility.trait.TraitType;
 import com.reinterpretation.hostility.trait.UnrealityEnchantHelper;
 import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.Tag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
@@ -38,7 +41,6 @@ import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.monster.Vex;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.level.Level;
 import net.minecraftforge.common.ForgeMod;
 import net.minecraftforge.event.entity.EntityJoinLevelEvent;
 import net.minecraftforge.event.entity.item.ItemTossEvent;
@@ -55,8 +57,10 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 @Mod.EventBusSubscriber(modid = ReinterpretationOfHostility.MODID)
@@ -73,6 +77,12 @@ public final class HostilityEventHandler {
     private static boolean handlingCounterattack = false;
     private static boolean handlingPierceDamage = false;
 
+    private record AttackerSnapshot(int level, Set<TraitType> traits) {
+        boolean hasTrait(TraitType type) {
+            return traits.contains(type);
+        }
+    }
+
     private HostilityEventHandler() {
     }
 
@@ -86,10 +96,9 @@ public final class HostilityEventHandler {
     @SubscribeEvent
     public static void onStartTracking(PlayerEvent.StartTracking event) {
         if (event.getEntity() instanceof ServerPlayer player
-                && event.getTarget() instanceof LivingEntity living
-                && MobTraitCapability.hasCap(living)) {
-            MobTraitCapability cap = MobTraitCapability.get(living);
-            if (cap.initialized) {
+                && event.getTarget() instanceof LivingEntity living) {
+            MobTraitCapability cap = MobTraitCapability.getOrNull(living);
+            if (cap != null && cap.initialized) {
                 NetworkHandler.sendToPlayer(player, new SyncMobTraitsS2CPacket(
                         living.getId(), cap.level, new ArrayList<>(cap.getTraitIds())
                 ));
@@ -115,7 +124,10 @@ public final class HostilityEventHandler {
     @SubscribeEvent
     public static void onPlayerClone(PlayerEvent.Clone event) {
         if (event.isWasDeath()) {
-            EntityDebuffCapability.get(event.getEntity()).clearAll(event.getEntity());
+            EntityDebuffCapability debuffCap = EntityDebuffCapability.getOrNull(event.getEntity());
+            if (debuffCap != null) {
+                debuffCap.clearAll(event.getEntity());
+            }
         }
     }
 
@@ -154,16 +166,19 @@ public final class HostilityEventHandler {
     @SubscribeEvent
     public static void onLivingTick(LivingEvent.LivingTickEvent event) {
         LivingEntity entity = event.getEntity();
-        if (entity.level().isClientSide()) {
+        if (entity.level().isClientSide() || entity.isRemoved()) {
             return;
         }
         long gameTime = entity.level().getGameTime();
 
-        EntityDebuffCapability.get(entity).tick(entity);
+        EntityDebuffCapability debuffCap = EntityDebuffCapability.getOrNull(entity);
+        if (debuffCap != null) {
+            debuffCap.tick(entity);
+        }
         UnrealityEnchantHelper.restoreExpiredOnEntity(entity, gameTime);
 
-        if (MobTraitCapability.hasCap(entity)) {
-            MobTraitCapability cap = MobTraitCapability.get(entity);
+        MobTraitCapability cap = MobTraitCapability.getOrNull(entity);
+        if (cap != null) {
             if (cap.hasTrait(TraitType.REGENERATION)
                     && entity.isAlive()
                     && entity.getHealth() < entity.getMaxHealth()
@@ -250,10 +265,12 @@ public final class HostilityEventHandler {
                             MobSpawnType.MOB_SUMMONED, null, null);
                     vex.setOwner(mob);
                     vex.setTarget(mob.getTarget());
-                    MobTraitCapability vexCap = MobTraitCapability.get(vex);
-                    vexCap.inspireSummoned = true;
-                    vexCap.initialized = true;
-                    vexCap.level = 0;
+                    MobTraitCapability vexCap = MobTraitCapability.getOrNull(vex);
+                    if (vexCap != null) {
+                        vexCap.inspireSummoned = true;
+                        vexCap.initialized = true;
+                        vexCap.level = 0;
+                    }
                     serverLevel.addFreshEntity(vex);
                     cap.inspiredVexUuids.add(vex.getUUID().toString());
                 }
@@ -271,11 +288,8 @@ public final class HostilityEventHandler {
         if (!(source.getEntity() instanceof LivingEntity attacker) || attacker == target) {
             return;
         }
-        if (!MobTraitCapability.hasCap(target)) {
-            return;
-        }
-        MobTraitCapability cap = MobTraitCapability.get(target);
-        if (!cap.hasTrait(TraitType.COUNTERATTACK)) {
+        MobTraitCapability cap = MobTraitCapability.getOrNull(target);
+        if (cap == null || !cap.hasTrait(TraitType.COUNTERATTACK)) {
             return;
         }
         long gameTime = target.level().getGameTime();
@@ -286,8 +300,8 @@ public final class HostilityEventHandler {
         handlingCounterattack = true;
         try {
             attacker.hurt(target.damageSources().mobAttack(target), 3.0f);
-            // Trigger on-hit trait probability checks even if attacker was in invulnerability frames
-            triggerOnHitTraits(target, attacker, gameTime);
+            AttackerSnapshot snapshot = new AttackerSnapshot(cap.level, cap.getTraits());
+            triggerOnHitTraits(target, snapshot, attacker, gameTime);
         } finally {
             handlingCounterattack = false;
         }
@@ -303,8 +317,8 @@ public final class HostilityEventHandler {
         long gameTime = target.level().getGameTime();
 
         // Defensive traits on target mob
-        if (MobTraitCapability.hasCap(target)) {
-            MobTraitCapability targetCap = MobTraitCapability.get(target);
+        MobTraitCapability targetCap = MobTraitCapability.getOrNull(target);
+        if (targetCap != null) {
             targetCap.lastDamageTick = gameTime;
 
             if (targetCap.hasTrait(TraitType.FORTITUDE) && isMeleePhysical(source)) {
@@ -333,12 +347,25 @@ public final class HostilityEventHandler {
             return;
         }
 
-        // Offensive traits from attacker mob
-        if (source.getEntity() instanceof LivingEntity attacker && MobTraitCapability.hasCap(attacker)) {
-            MobTraitCapability attackerCap = MobTraitCapability.get(attacker);
+        // Offensive traits from attacker mob (supports discarded Creepers via PersistentData fallback)
+        if (source.getEntity() instanceof LivingEntity attacker && MobTraitCapability.isHostileCandidate(attacker)) {
+            AttackerSnapshot attackerSnap = getAttackerSnapshot(attacker);
+            if (attackerSnap == null) {
+                return;
+            }
+
+            // Apply level-based damage scaling for mobs without ATTACK_DAMAGE (e.g., Creeper explosions)
+            if (attackerSnap.level() > 0 && attacker.getAttribute(Attributes.ATTACK_DAMAGE) == null) {
+                double mod = ModConfig.COMMON.statScalingModifier.get();
+                if (mod > 0.0) {
+                    double bonus = attackerSnap.level() * ModConfig.COMMON.damageBonusPerLevel.get() * mod;
+                    event.setAmount((float) (event.getAmount() * (1.0 + bonus)));
+                }
+            }
+
             RandomSource rand = attacker.getRandom();
 
-            if (attackerCap.hasTrait(TraitType.DESTRUCTION)) {
+            if (attackerSnap.hasTrait(TraitType.DESTRUCTION)) {
                 List<MobEffect> beneficial = new ArrayList<>();
                 for (MobEffectInstance inst : target.getActiveEffects()) {
                     if (inst.getEffect().isBeneficial()) {
@@ -355,14 +382,12 @@ public final class HostilityEventHandler {
                 }
             }
 
-            // Counterattack already invokes triggerOnHitTraits in onLivingAttack
             if (!handlingCounterattack) {
-                triggerOnHitTraits(attacker, target, gameTime);
+                triggerOnHitTraits(attacker, attackerSnap, target, gameTime);
             }
 
-            // Armor Pierce & Protection Pierce split 5% each into piercing damage
-            boolean hasArmorPierce = attackerCap.hasTrait(TraitType.ARMOR_PIERCE);
-            boolean hasProtPierce = attackerCap.hasTrait(TraitType.PROTECTION_PIERCE);
+            boolean hasArmorPierce = attackerSnap.hasTrait(TraitType.ARMOR_PIERCE);
+            boolean hasProtPierce = attackerSnap.hasTrait(TraitType.PROTECTION_PIERCE);
             if (hasArmorPierce || hasProtPierce) {
                 float baseAmount = event.getAmount();
                 float pierceRatio = (hasArmorPierce ? 0.05f : 0.0f) + (hasProtPierce ? 0.05f : 0.0f);
@@ -387,54 +412,74 @@ public final class HostilityEventHandler {
         }
     }
 
-    private static void triggerOnHitTraits(LivingEntity attacker, LivingEntity target, long gameTime) {
-        if (!MobTraitCapability.hasCap(attacker)) {
-            return;
+    private static AttackerSnapshot getAttackerSnapshot(LivingEntity attacker) {
+        MobTraitCapability cap = MobTraitCapability.getOrNull(attacker);
+        if (cap != null) {
+            return new AttackerSnapshot(cap.level, cap.getTraits());
         }
-        MobTraitCapability cap = MobTraitCapability.get(attacker);
-        RandomSource rand = attacker.getRandom();
+        CompoundTag pdata = attacker.getPersistentData();
+        if (pdata.contains("rohostility_lv")) {
+            int lv = pdata.getInt("rohostility_lv");
+            Set<TraitType> traits = EnumSet.noneOf(TraitType.class);
+            if (pdata.contains("rohostility_traits", Tag.TAG_LIST)) {
+                ListTag list = pdata.getList("rohostility_traits", Tag.TAG_STRING);
+                for (int i = 0; i < list.size(); i++) {
+                    TraitType t = TraitType.byId(list.getString(i));
+                    if (t != null) {
+                        traits.add(t);
+                    }
+                }
+            }
+            return new AttackerSnapshot(lv, traits);
+        }
+        return null;
+    }
 
-        if (cap.hasTrait(TraitType.APOCALYPSE) && rand.nextFloat() < 0.30f) {
+    private static void triggerOnHitTraits(LivingEntity attacker, AttackerSnapshot snap, LivingEntity target, long gameTime) {
+        RandomSource rand = attacker.getRandom();
+        EntityDebuffCapability targetDebuff = EntityDebuffCapability.getOrNull(target);
+
+        if (targetDebuff != null && snap.hasTrait(TraitType.APOCALYPSE) && rand.nextFloat() < 0.30f) {
             List<String> slots = EntityDebuffCapability.collectWeakenableSlots(target);
             if (!slots.isEmpty()) {
                 String chosen = slots.get(rand.nextInt(slots.size()));
-                EntityDebuffCapability.get(target).applyApocalypse(target, chosen, gameTime);
+                targetDebuff.applyApocalypse(target, chosen, gameTime);
             }
         }
 
-        if (cap.hasTrait(TraitType.SEAL) && rand.nextFloat() < 0.10f) {
+        if (targetDebuff != null && snap.hasTrait(TraitType.SEAL) && rand.nextFloat() < 0.10f) {
             List<String> slots = EntityDebuffCapability.collectAllEquippedSlots(target);
             if (!slots.isEmpty()) {
                 String chosen = slots.get(rand.nextInt(slots.size()));
-                EntityDebuffCapability.get(target).applySeal(target, chosen, gameTime);
+                targetDebuff.applySeal(target, chosen, gameTime);
             }
         }
 
-        if (cap.hasTrait(TraitType.UNREALITY) && rand.nextFloat() < 0.40f) {
+        if (snap.hasTrait(TraitType.UNREALITY) && rand.nextFloat() < 0.40f) {
             UnrealityEnchantHelper.weakenRandomEnchantment(target, gameTime);
         }
 
-        if (cap.hasTrait(TraitType.PLUNDER) && rand.nextFloat() < 0.25f) {
-            EntityDebuffCapability.get(target).addPlunderStack(target, gameTime);
+        if (targetDebuff != null && snap.hasTrait(TraitType.PLUNDER) && rand.nextFloat() < 0.25f) {
+            targetDebuff.addPlunderStack(target, gameTime);
         }
 
-        if (cap.hasTrait(TraitType.LIFESTEAL)) {
+        if (snap.hasTrait(TraitType.LIFESTEAL) && attacker.isAlive()) {
             attacker.heal(attacker.getMaxHealth() * 0.001f);
         }
 
-        if (cap.hasTrait(TraitType.ANTI_REVIVE) && rand.nextFloat() < 0.50f) {
+        if (snap.hasTrait(TraitType.ANTI_REVIVE) && rand.nextFloat() < 0.50f) {
             target.addEffect(new MobEffectInstance(ModEffects.REVIVE_PREVENTION.get(), 160, 0));
         }
 
-        if (cap.hasTrait(TraitType.POISON_STRIKE) && rand.nextFloat() < 0.50f) {
+        if (snap.hasTrait(TraitType.POISON_STRIKE) && rand.nextFloat() < 0.50f) {
             target.addEffect(new MobEffectInstance(MobEffects.POISON, 120, 0));
         }
 
-        if (cap.hasTrait(TraitType.WEAKNESS_STRIKE) && rand.nextFloat() < 0.50f) {
+        if (snap.hasTrait(TraitType.WEAKNESS_STRIKE) && rand.nextFloat() < 0.50f) {
             target.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, 120, 0));
         }
 
-        if (cap.hasTrait(TraitType.RESENTMENT) && rand.nextFloat() < 0.40f) {
+        if (snap.hasTrait(TraitType.RESENTMENT) && rand.nextFloat() < 0.40f) {
             target.addEffect(new MobEffectInstance(ModEffects.CURSE.get(), 160, 0));
         }
     }
@@ -442,11 +487,11 @@ public final class HostilityEventHandler {
     @SubscribeEvent(priority = EventPriority.HIGHEST)
     public static void onLivingDeathRevive(LivingDeathEvent event) {
         LivingEntity entity = event.getEntity();
-        if (entity.level().isClientSide() || !MobTraitCapability.hasCap(entity)) {
+        if (entity.level().isClientSide()) {
             return;
         }
-        MobTraitCapability cap = MobTraitCapability.get(entity);
-        if (cap.hasTrait(TraitType.REVIVE) && !cap.reviveUsed) {
+        MobTraitCapability cap = MobTraitCapability.getOrNull(entity);
+        if (cap != null && cap.hasTrait(TraitType.REVIVE) && !cap.reviveUsed) {
             cap.reviveUsed = true;
             event.setCanceled(true);
             entity.setHealth(entity.getMaxHealth());
@@ -470,17 +515,16 @@ public final class HostilityEventHandler {
             return;
         }
 
-        EntityDebuffCapability.get(entity).clearAll(entity);
+        EntityDebuffCapability debuffCap = EntityDebuffCapability.getOrNull(entity);
+        if (debuffCap != null) {
+            debuffCap.clearAll(entity);
+        }
 
-        if (MobTraitCapability.hasCap(entity)
-                && event.getSource().getEntity() instanceof ServerPlayer killer) {
+        MobTraitCapability mobCap = MobTraitCapability.getOrNull(entity);
+        if (mobCap != null && event.getSource().getEntity() instanceof ServerPlayer killer) {
             PlayerDifficultyCapability playerCap = PlayerDifficultyCapability.get(killer);
             if (playerCap.isUnlocked()) {
-                MobTraitCapability mobCap = MobTraitCapability.get(entity);
-                double baseGain = ModConfig.COMMON.baseKillDifficultyGain.get();
-                double levelBonus = mobCap.level * ModConfig.COMMON.mobLevelKillBonus.get();
-                double gain = (baseGain + levelBonus) * ModConfig.COMMON.difficultyGainMultiplier.get();
-                playerCap.addDangerPoints(killer, gain);
+                playerCap.addKillCredit(killer, mobCap.level);
             }
         }
     }

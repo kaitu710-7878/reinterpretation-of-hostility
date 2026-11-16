@@ -1,5 +1,21 @@
 # Changelog / 変更履歴
 
+## [0.2.4-beta] - 2026-11-16
+
+### 日本語
+- **クラッシュ修正**: `EntityDebuffCapability` / `MobTraitCapability` の取得時に `getOrNull` による安全な存在確認を行うよう修正し、`Creeper` 等の tick 時に発生していた `NoSuchElementException` を解消。
+- **クリーパー対応**: `ATTACK_DAMAGE` 属性を持たないモブの爆発等にもレベル攻撃力倍率を適用し、`PersistentData` フォールバックにより爆発直前に `discard()` されたクリーパーでも攻撃時確率特性が正常に判定されるよう修正。
+- **危険度上昇ペースを本家の倍遅い設定へ修正**: 本家 L2Hostility と同じ経験値テーブル式を導入し、`killsPerLevel` を本家デフォルト `30` の倍である `60` に設定（基礎HP倍率も本家準拠の `0.03` に調整）。
+- **UI はみ出し修正**: `HostilityInfoScreen` のテキストをパネル幅（`156px`）内に収まるよう調整。
+- **加護貫通の説明文修正**: 「エンチャント・エフェクト貫通ダメージ（物理防御は適用）」に修正。
+
+### English
+- **Crash Fix**: Added safe `getOrNull` capability accessors for `EntityDebuffCapability` and `MobTraitCapability` to prevent `NoSuchElementException` during entity ticks (e.g., Creepers).
+- **Creeper Support**: Applied level-based damage scaling to mobs lacking `Attributes.ATTACK_DAMAGE` (such as Creeper explosions) and added `PersistentData` fallback so discarded Creepers still trigger on-hit traits properly.
+- **Danger Progression Pace Fix**: Adopted L2Hostility's kill-credit experience formula with `killsPerLevel = 60` (twice as slow as original `30`) and aligned `healthBonusPerLevel` to `0.03`.
+- **UI Text Overflow Fix**: Constrained `HostilityInfoScreen` text strings within the `156px` panel width.
+- **Protection Pierce Description Fix**: Updated localization to accurately state it bypasses enchantments and effects while respecting armor.
+
 ## [0.2.3-beta] - 2026-11-16
 
 ### 日本語

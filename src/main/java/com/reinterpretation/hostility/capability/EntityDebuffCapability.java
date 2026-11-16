@@ -57,6 +57,13 @@ public class EntityDebuffCapability extends GeneralCapabilityTemplate<LivingEnti
 
     private final Set<Attribute> appliedApocalypseAttributes = new HashSet<>();
 
+    public static EntityDebuffCapability getOrNull(LivingEntity entity) {
+        if (entity == null || !HOLDER.isProper(entity)) {
+            return null;
+        }
+        return entity.getCapability(CAPABILITY).resolve().orElse(null);
+    }
+
     public static EntityDebuffCapability get(LivingEntity entity) {
         return HOLDER.get(entity);
     }

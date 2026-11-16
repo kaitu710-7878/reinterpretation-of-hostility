@@ -73,7 +73,16 @@ public class MobTraitCapability extends GeneralCapabilityTemplate<LivingEntity, 
     }
 
     public static boolean hasCap(LivingEntity entity) {
-        return isHostileCandidate(entity) && HOLDER.isProper(entity);
+        return isHostileCandidate(entity)
+                && HOLDER.isProper(entity)
+                && entity.getCapability(CAPABILITY).isPresent();
+    }
+
+    public static MobTraitCapability getOrNull(LivingEntity entity) {
+        if (!isHostileCandidate(entity) || !HOLDER.isProper(entity)) {
+            return null;
+        }
+        return entity.getCapability(CAPABILITY).resolve().orElse(null);
     }
 
     public static MobTraitCapability get(LivingEntity entity) {

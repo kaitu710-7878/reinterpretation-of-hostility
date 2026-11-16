@@ -76,7 +76,8 @@ public class HostilityInfoScreen extends BaseTextScreen {
 
         int x = this.leftPos + 10;
         int y = this.topPos + 10;
-        graphics.drawString(this.font, this.title, x, y, 0x404040, false);
+        int maxW = this.imageWidth - 20;
+        graphics.drawString(this.font, this.font.plainSubstrByWidth(this.title.getString(), maxW), x, y, 0x404040, false);
 
         Player player = Minecraft.getInstance().player;
         if (player == null) {
@@ -108,16 +109,18 @@ public class HostilityInfoScreen extends BaseTextScreen {
 
             Component dangerText = Component.translatable(
                     "screen.rohostility.info.danger_points_cap",
-                    String.format("%.1f", danger),
-                    String.format("%.0f", dangerCap)
+                    String.format("%.0f", danger),
+                    String.format("%.0f", dangerCap),
+                    cap.getDangerExp(),
+                    cap.getMaxDangerExp()
             );
-            graphics.drawString(this.font, dangerText, x, y + 14, 0x8B0000, false);
+            graphics.drawString(this.font, this.font.plainSubstrByWidth(dangerText.getString(), maxW), x, y + 14, 0x8B0000, false);
 
             Component rangeText = Component.translatable(
                     "screen.rohostility.info.level_range",
                     minLv, maxLv
             );
-            graphics.drawString(this.font, rangeText, x, y + 25, 0x202020, false);
+            graphics.drawString(this.font, this.font.plainSubstrByWidth(rangeText.getString(), maxW), x, y + 25, 0x202020, false);
 
             Component maxLevelText = Component.translatable(
                     "screen.rohostility.info.max_level_cap",
@@ -125,14 +128,14 @@ public class HostilityInfoScreen extends BaseTextScreen {
                     cap.isReachedEnd() ? 10 : 0,
                     cap.getVisitedModDimensionCount() * 5
             );
-            graphics.drawString(this.font, maxLevelText, x, y + 36, 0x004488, false);
+            graphics.drawString(this.font, this.font.plainSubstrByWidth(maxLevelText.getString(), maxW), x, y + 36, 0x004488, false);
 
             int traitMin = ModConfig.COMMON.traitMinLevel.get();
             Component traitHeader = Component.translatable(
                     "screen.rohostility.info.traits_header",
                     traitMin
             );
-            graphics.drawString(this.font, traitHeader, x, y + 49, 0x404040, false);
+            graphics.drawString(this.font, this.font.plainSubstrByWidth(traitHeader.getString(), maxW), x, y + 49, 0x404040, false);
 
             List<TraitType> sortedTraits = new ArrayList<>();
             for (TraitType type : TraitType.values()) {

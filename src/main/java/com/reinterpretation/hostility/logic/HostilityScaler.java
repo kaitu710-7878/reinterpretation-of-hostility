@@ -6,6 +6,9 @@ import com.reinterpretation.hostility.config.ModConfig;
 import com.reinterpretation.hostility.network.NetworkHandler;
 import com.reinterpretation.hostility.network.SyncMobTraitsS2CPacket;
 import com.reinterpretation.hostility.trait.TraitType;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.StringTag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.Mth;
@@ -94,6 +97,16 @@ public final class HostilityScaler {
         }
 
         syncToTracking(entity, cap);
+    }
+
+    public static void cacheToPersistentData(LivingEntity entity, MobTraitCapability cap) {
+        CompoundTag pdata = entity.getPersistentData();
+        pdata.putInt("rohostility_lv", cap.level);
+        ListTag list = new ListTag();
+        for (String id : cap.getTraitIds()) {
+            list.add(StringTag.valueOf(id));
+        }
+        pdata.put("rohostility_traits", list);
     }
 
     public static void applyTraitSpawnAttributes(LivingEntity entity, MobTraitCapability cap) {
@@ -225,6 +238,7 @@ public final class HostilityScaler {
     }
 
     public static void syncToTracking(LivingEntity entity, MobTraitCapability cap) {
+        cacheToPersistentData(entity, cap);
         NetworkHandler.sendToTracking(entity, new SyncMobTraitsS2CPacket(
                 entity.getId(), cap.level, new ArrayList<>(cap.getTraitIds())
         ));

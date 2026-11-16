@@ -40,6 +40,9 @@ public class PlayerDifficultyCapability extends PlayerCapabilityTemplate<PlayerD
     public double dangerPoints = 0.0;
 
     @SerialField
+    public long dangerExp = 0L;
+
+    @SerialField
     public boolean reachedEnd = false;
 
     @SerialField
@@ -69,6 +72,16 @@ public class PlayerDifficultyCapability extends PlayerCapabilityTemplate<PlayerD
         return Math.max(0, (int) Math.floor(Math.min(cap, dangerPoints)));
     }
 
+    public long getDangerExp() {
+        return dangerExp;
+    }
+
+    public long getMaxDangerExp() {
+        int lv = getDangerLevel();
+        int factor = ModConfig.COMMON.killsPerLevel.get();
+        return Math.max(1L, (long) lv * lv * factor);
+    }
+
     public int getEffectiveMaxLevel() {
         int base = ModConfig.COMMON.maxLevel.get();
         int endBonus = reachedEnd ? 10 : 0;
@@ -94,30 +107,56 @@ public class PlayerDifficultyCapability extends PlayerCapabilityTemplate<PlayerD
     public void setDangerPoints(ServerPlayer player, double value) {
         double cap = ModConfig.COMMON.maxDangerCap.get();
         dangerPoints = Mth.clamp(value, 0.0, cap);
-        HOLDER.network.toClientSyncAll(player);
-    }
-
-    public void addDangerPoints(ServerPlayer player, double amount) {
-        if (!unlocked || amount == 0.0) {
-            return;
-        }
-        double cap = ModConfig.COMMON.maxDangerCap.get();
-        dangerPoints = Mth.clamp(dangerPoints + amount, 0.0, cap);
+        dangerExp = 0L;
         HOLDER.network.toClientSyncAll(player);
     }
 
     public void addDangerPointsUnchecked(ServerPlayer player, double delta) {
         double cap = ModConfig.COMMON.maxDangerCap.get();
         dangerPoints = Mth.clamp(dangerPoints + delta, 0.0, cap);
+        dangerExp = 0L;
+        HOLDER.network.toClientSyncAll(player);
+    }
+
+    /**
+     * L2Hostility-style kill credit growth, defaulting to killsPerLevel = 60 (half the original pace).
+     */
+    public void addKillCredit(ServerPlayer player, int mobLevel) {
+        if (!unlocked) {
+            return;
+        }
+        int dangerCap = (int) Math.floor(ModConfig.COMMON.maxDangerCap.get());
+        int current = getDangerLevel();
+        if (current >= dangerCap) {
+            dangerPoints = dangerCap;
+            dangerExp = 0L;
+            return;
+        }
+
+        int lv = Math.max(1, Math.min(current + 10, mobLevel));
+        dangerExp += (long) lv * lv;
+
+        int factor = ModConfig.COMMON.killsPerLevel.get();
+        while (current < dangerCap) {
+            long req = Math.max(1L, (long) current * current * factor);
+            if (dangerExp < req) {
+                break;
+            }
+            dangerExp -= req;
+            current++;
+        }
+
+        if (current >= dangerCap) {
+            current = dangerCap;
+            dangerExp = 0L;
+        }
+
+        dangerPoints = current;
         HOLDER.network.toClientSyncAll(player);
     }
 
     public void onDimensionVisited(ServerPlayer player, Level level) {
         boolean changed = false;
-        if (level.dimension() == Level.NETHER && !unlocked) {
-            unlocked = true;
-            changed = true;
-        }
         if (level.dimension() == Level.END && !reachedEnd) {
             reachedEnd = true;
             changed = true;
