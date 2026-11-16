@@ -29,8 +29,6 @@ public class ModConfig {
         public final ForgeConfigSpec.DoubleValue damageBonusPerLevel;
         public final ForgeConfigSpec.DoubleValue statScalingModifier;
 
-        public final ForgeConfigSpec.IntValue netherDimensionBonus;
-        public final ForgeConfigSpec.IntValue endDimensionBonus;
         public final ForgeConfigSpec.IntValue levelRandomVariance;
 
         public final ForgeConfigSpec.BooleanValue showMobOverheadInfo;
@@ -72,14 +70,6 @@ public class ModConfig {
             levelRandomVariance = builder
                     .comment("Random level variance (+/-) applied when mobs spawn.")
                     .defineInRange("levelRandomVariance", 5, 0, 100);
-
-            netherDimensionBonus = builder
-                    .comment("Flat level bonus added in the Nether.")
-                    .defineInRange("netherDimensionBonus", 20, 0, 600);
-
-            endDimensionBonus = builder
-                    .comment("Flat level bonus added in the End.")
-                    .defineInRange("endDimensionBonus", 40, 0, 600);
 
             builder.pop();
 

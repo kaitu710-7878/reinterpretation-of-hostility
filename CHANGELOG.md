@@ -1,5 +1,13 @@
 # Changelog / 変更履歴
 
+## [0.2.3-beta] - 2026-11-16
+
+### 日本語
+- モブスポーン時のディメンション固定レベル補正（ネザー/エンド加算）を削除し、ディメンション到達による効果は最大レベル上限拡張のみとなるよう統一。
+
+### English
+- Removed flat dimension level bonuses (`netherDimensionBonus` / `endDimensionBonus`) on mob spawn; dimension progression only expands the maximum level cap.
+
 ## [0.2.2-beta] - 2026-11-16
 
 ### 日本語

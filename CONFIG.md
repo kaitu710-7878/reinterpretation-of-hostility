@@ -17,8 +17,6 @@ The configuration file is generated at `config/rohostility-common.toml`.
 | `baseKillDifficultyGain` | Double (`0.0..1000.0`) | `1.0` | 1体討伐あたりの基礎危険度上昇量 / Base danger points per kill |
 | `mobLevelKillBonus` | Double (`0.0..100.0`) | `0.05` | 倒したモブのレベル1あたりの追加危険度 / Bonus danger points per mob level |
 | `levelRandomVariance` | Integer (`0..100`) | `5` | スポーン時のレベルランダム振れ幅（±） / Random level variance (+/-) |
-| `netherDimensionBonus` | Integer (`0..600`) | `20` | ネザーでの固定レベル加算 / Flat level bonus in the Nether |
-| `endDimensionBonus` | Integer (`0..600`) | `40` | エンドでの固定レベル加算 / Flat level bonus in the End |
 
 ## `[scaling]` - ステータス補正 / Stat Scaling
 

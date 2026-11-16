@@ -15,7 +15,6 @@ import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
-import net.minecraft.world.level.Level;
 import net.minecraftforge.common.ForgeMod;
 
 import java.util.ArrayList;
@@ -75,12 +74,6 @@ public final class HostilityScaler {
 
         PlayerDifficultyCapability playerCap = PlayerDifficultyCapability.get(nearest);
         double danger = playerCap.getDangerPoints();
-        int dimBonus = 0;
-        if (serverLevel.dimension() == Level.NETHER) {
-            dimBonus = ModConfig.COMMON.netherDimensionBonus.get();
-        } else if (serverLevel.dimension() == Level.END) {
-            dimBonus = ModConfig.COMMON.endDimensionBonus.get();
-        }
 
         RandomSource random = entity.getRandom();
         double factor = 0.85 + random.nextDouble() * 0.30;
@@ -88,7 +81,7 @@ public final class HostilityScaler {
         int offset = variance > 0 ? random.nextInt(variance * 2 + 1) - variance : 0;
 
         int maxLevel = playerCap.getEffectiveMaxLevel();
-        int level = Mth.clamp((int) Math.round(danger * factor) + dimBonus + offset, 0, maxLevel);
+        int level = Mth.clamp((int) Math.round(danger * factor) + offset, 0, maxLevel);
         cap.level = level;
 
         if (level > 0) {
