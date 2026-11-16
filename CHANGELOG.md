@@ -1,5 +1,13 @@
 # Changelog / 変更履歴
 
+## [0.2.6-beta] - 2026-11-16
+
+### 日本語
+- **加護 (`protection`) の魔法判定整理**: 特定MOD名指しの判定や文字列マッチを撤廃し、バニラ標準タグおよび `L2DamageTracker`（`L2DamageTypes.MAGIC` = `forge:is_magic`）の標準タグによる魔法ダメージ判定へ統一。
+
+### English
+- **Protection Trait Magic Tag Cleanup**: Removed mod-specific references and string matching, standardizing magic damage detection on vanilla tags and `forge:is_magic` (matching `L2DamageTracker`'s `L2DamageTypes.MAGIC`).
+
 ## [0.2.5-beta] - 2026-11-16
 
 ### 日本語

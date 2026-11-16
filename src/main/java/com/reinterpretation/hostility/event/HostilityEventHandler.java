@@ -78,12 +78,8 @@ public final class HostilityEventHandler {
     private static final UUID INSPIRE_MOV_UUID = UUID.fromString("8b2c1000-0002-4000-8000-000000000002");
     private static final UUID INSPIRE_ARM_UUID = UUID.fromString("8b2c1000-0002-4000-8000-000000000003");
 
-    private static final TagKey<DamageType> TAG_L2_MAGIC =
-            TagKey.create(Registries.DAMAGE_TYPE, new ResourceLocation("l2damagetracker", "magic"));
     private static final TagKey<DamageType> TAG_FORGE_MAGIC =
             TagKey.create(Registries.DAMAGE_TYPE, new ResourceLocation("forge", "is_magic"));
-    private static final TagKey<DamageType> TAG_ISS_MAGIC =
-            TagKey.create(Registries.DAMAGE_TYPE, new ResourceLocation("irons_spellbooks", "magic"));
 
     private static boolean handlingCounterattack = false;
     private static boolean handlingPierceDamage = false;
@@ -576,21 +572,9 @@ public final class HostilityEventHandler {
         if (source.is(ModDamageTypes.PROTECTION_PIERCE) || source.is(ModDamageTypes.ARMOR_PIERCE)) {
             return false;
         }
-        if (source.is(DamageTypes.MAGIC)
+        return source.is(DamageTypes.MAGIC)
                 || source.is(DamageTypes.INDIRECT_MAGIC)
                 || source.is(DamageTypeTags.WITCH_RESISTANT_TO)
-                || source.is(TAG_L2_MAGIC)
-                || source.is(TAG_FORGE_MAGIC)
-                || source.is(TAG_ISS_MAGIC)) {
-            return true;
-        }
-        String msgId = source.getMsgId().toLowerCase();
-        if (msgId.contains("magic") || msgId.contains("spell")) {
-            return true;
-        }
-        return source.typeHolder().unwrapKey()
-                .map(k -> k.location().getPath().toLowerCase())
-                .map(path -> path.contains("magic") || path.contains("spell"))
-                .orElse(false);
+                || source.is(TAG_FORGE_MAGIC);
     }
 }
