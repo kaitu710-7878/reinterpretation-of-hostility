@@ -15,16 +15,20 @@ import com.reinterpretation.hostility.network.SyncMobTraitsS2CPacket;
 import com.reinterpretation.hostility.trait.TraitType;
 import com.reinterpretation.hostility.trait.UnrealityEnchantHelper;
 import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.tags.DamageTypeTags;
+import net.minecraft.tags.TagKey;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.damagesource.DamageType;
 import net.minecraft.world.damagesource.DamageTypes;
 import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffectInstance;
@@ -73,6 +77,13 @@ public final class HostilityEventHandler {
     private static final UUID INSPIRE_DMG_UUID = UUID.fromString("8b2c1000-0002-4000-8000-000000000001");
     private static final UUID INSPIRE_MOV_UUID = UUID.fromString("8b2c1000-0002-4000-8000-000000000002");
     private static final UUID INSPIRE_ARM_UUID = UUID.fromString("8b2c1000-0002-4000-8000-000000000003");
+
+    private static final TagKey<DamageType> TAG_L2_MAGIC =
+            TagKey.create(Registries.DAMAGE_TYPE, new ResourceLocation("l2damagetracker", "magic"));
+    private static final TagKey<DamageType> TAG_FORGE_MAGIC =
+            TagKey.create(Registries.DAMAGE_TYPE, new ResourceLocation("forge", "is_magic"));
+    private static final TagKey<DamageType> TAG_ISS_MAGIC =
+            TagKey.create(Registries.DAMAGE_TYPE, new ResourceLocation("irons_spellbooks", "magic"));
 
     private static boolean handlingCounterattack = false;
     private static boolean handlingPierceDamage = false;
@@ -464,7 +475,7 @@ public final class HostilityEventHandler {
         }
 
         if (snap.hasTrait(TraitType.LIFESTEAL) && attacker.isAlive()) {
-            attacker.heal(attacker.getMaxHealth() * 0.001f);
+            attacker.heal(attacker.getMaxHealth() * 0.005f);
         }
 
         if (snap.hasTrait(TraitType.ANTI_REVIVE) && rand.nextFloat() < 0.50f) {
@@ -476,7 +487,7 @@ public final class HostilityEventHandler {
         }
 
         if (snap.hasTrait(TraitType.WEAKNESS_STRIKE) && rand.nextFloat() < 0.50f) {
-            target.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, 120, 0));
+            target.addEffect(new MobEffectInstance(MobEffects.WITHER, 120, 0));
         }
 
         if (snap.hasTrait(TraitType.RESENTMENT) && rand.nextFloat() < 0.40f) {
@@ -562,8 +573,24 @@ public final class HostilityEventHandler {
     }
 
     private static boolean isMagicDamage(DamageSource source) {
-        return source.is(DamageTypes.MAGIC)
+        if (source.is(ModDamageTypes.PROTECTION_PIERCE) || source.is(ModDamageTypes.ARMOR_PIERCE)) {
+            return false;
+        }
+        if (source.is(DamageTypes.MAGIC)
                 || source.is(DamageTypes.INDIRECT_MAGIC)
-                || source.is(DamageTypeTags.WITCH_RESISTANT_TO);
+                || source.is(DamageTypeTags.WITCH_RESISTANT_TO)
+                || source.is(TAG_L2_MAGIC)
+                || source.is(TAG_FORGE_MAGIC)
+                || source.is(TAG_ISS_MAGIC)) {
+            return true;
+        }
+        String msgId = source.getMsgId().toLowerCase();
+        if (msgId.contains("magic") || msgId.contains("spell")) {
+            return true;
+        }
+        return source.typeHolder().unwrapKey()
+                .map(k -> k.location().getPath().toLowerCase())
+                .map(path -> path.contains("magic") || path.contains("spell"))
+                .orElse(false);
     }
 }

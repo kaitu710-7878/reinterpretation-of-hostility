@@ -84,9 +84,54 @@ public class EntityDebuffCapability extends GeneralCapabilityTemplate<LivingEnti
         }
     }
 
+    public static final String TAG_APOCALYPSE_EXPIRE = "rohostility_apocalypse_expire";
+
     public void applyApocalypse(LivingEntity entity, String slotKey, long gameTime) {
-        apocalypseSlots.put(slotKey, gameTime + 100L); // 5 seconds
+        long expireTick = gameTime + 100L; // 5 seconds
+        apocalypseSlots.put(slotKey, expireTick);
+        setStackApocalypseTag(entity, slotKey, expireTick);
         updateApocalypseModifiers(entity);
+    }
+
+    private void setStackApocalypseTag(LivingEntity entity, String slotKey, long expireTick) {
+        if (slotKey.startsWith("vanilla:")) {
+            EquipmentSlot slot = EquipmentSlot.byName(slotKey.substring("vanilla:".length()));
+            ItemStack stack = entity.getItemBySlot(slot);
+            if (!stack.isEmpty()) {
+                stack.getOrCreateTag().putLong(TAG_APOCALYPSE_EXPIRE, expireTick);
+            }
+        } else if (slotKey.startsWith("curios:") && CuriosCompat.isLoaded()) {
+            for (CuriosCompat.CurioSlotEntry entry : CuriosCompat.getEquippedCurios(entity)) {
+                if (entry.slotKey().equals(slotKey) && !entry.stack().isEmpty()) {
+                    entry.stack().getOrCreateTag().putLong(TAG_APOCALYPSE_EXPIRE, expireTick);
+                }
+            }
+        }
+    }
+
+    private void cleanupExpiredApocalypseTags(LivingEntity entity, long gameTime) {
+        if (entity instanceof Player player) {
+            for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
+                removeExpiredApocalypseTag(player.getInventory().getItem(i), gameTime);
+            }
+        } else {
+            for (EquipmentSlot slot : EquipmentSlot.values()) {
+                removeExpiredApocalypseTag(entity.getItemBySlot(slot), gameTime);
+            }
+        }
+        if (CuriosCompat.isLoaded()) {
+            for (CuriosCompat.CurioSlotEntry entry : CuriosCompat.getEquippedCurios(entity)) {
+                removeExpiredApocalypseTag(entry.stack(), gameTime);
+            }
+        }
+    }
+
+    private static void removeExpiredApocalypseTag(ItemStack stack, long gameTime) {
+        if (!stack.isEmpty() && stack.hasTag() && stack.getTag().contains(TAG_APOCALYPSE_EXPIRE)) {
+            if (gameTime >= stack.getTag().getLong(TAG_APOCALYPSE_EXPIRE)) {
+                stack.getTag().remove(TAG_APOCALYPSE_EXPIRE);
+            }
+        }
     }
 
     public void applySeal(LivingEntity entity, String slotKey, long gameTime) {
@@ -165,6 +210,7 @@ public class EntityDebuffCapability extends GeneralCapabilityTemplate<LivingEnti
         long gameTime = entity.level().getGameTime();
 
         restoreSealedItems(entity, gameTime, false);
+        cleanupExpiredApocalypseTags(entity, gameTime);
 
         if (!plunderExpireTicks.isEmpty()) {
             boolean removed = plunderExpireTicks.removeIf(expire -> gameTime >= expire);
@@ -309,6 +355,9 @@ public class EntityDebuffCapability extends GeneralCapabilityTemplate<LivingEnti
     public static List<String> collectWeakenableSlots(LivingEntity entity) {
         List<String> slots = new ArrayList<>();
         for (EquipmentSlot slot : EquipmentSlot.values()) {
+            if (slot.getType() != EquipmentSlot.Type.ARMOR) {
+                continue;
+            }
             ItemStack stack = entity.getItemBySlot(slot);
             if (!stack.isEmpty() && !stack.is(ModItems.SEALED_ITEM.get())
                     && hasPositiveModifiers(stack.getAttributeModifiers(slot))) {
@@ -335,6 +384,9 @@ public class EntityDebuffCapability extends GeneralCapabilityTemplate<LivingEnti
     public static List<String> collectAllEquippedSlots(LivingEntity entity) {
         List<String> slots = new ArrayList<>();
         for (EquipmentSlot slot : EquipmentSlot.values()) {
+            if (slot.getType() != EquipmentSlot.Type.ARMOR) {
+                continue;
+            }
             ItemStack stack = entity.getItemBySlot(slot);
             if (!stack.isEmpty() && !stack.is(ModItems.SEALED_ITEM.get())) {
                 slots.add("vanilla:" + slot.getName());

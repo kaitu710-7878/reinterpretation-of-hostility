@@ -1,6 +1,8 @@
 package com.reinterpretation.hostility.trait;
 
+import net.minecraft.ChatFormatting;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
@@ -30,6 +32,9 @@ public final class UnrealityEnchantHelper {
         List<Candidate> candidates = new ArrayList<>();
 
         for (EquipmentSlot slot : EquipmentSlot.values()) {
+            if (slot.getType() != EquipmentSlot.Type.ARMOR) {
+                continue;
+            }
             ItemStack stack = target.getItemBySlot(slot);
             if (stack.isEmpty()) {
                 continue;
@@ -151,5 +156,67 @@ public final class UnrealityEnchantHelper {
         if (unrealityTag.isEmpty()) {
             root.remove(TAG_UNREALITY);
         }
+    }
+
+    public static void modifyTooltip(ItemStack stack, List<Component> tooltip, long gameTime) {
+        if (stack.isEmpty() || !stack.hasTag()) {
+            return;
+        }
+        CompoundTag root = stack.getTag();
+        if (root == null || !root.contains(TAG_UNREALITY)) {
+            return;
+        }
+        CompoundTag unrealityTag = root.getCompound(TAG_UNREALITY);
+        if (unrealityTag.isEmpty()) {
+            return;
+        }
+
+        List<Component> weakenedLines = new ArrayList<>();
+        for (String key : unrealityTag.getAllKeys()) {
+            CompoundTag info = unrealityTag.getCompound(key);
+            long expire = info.getLong(KEY_EXPIRE);
+            if (gameTime >= expire) {
+                continue;
+            }
+            ResourceLocation id = ResourceLocation.tryParse(key);
+            if (id == null) {
+                continue;
+            }
+            Enchantment ench = ForgeRegistries.ENCHANTMENTS.getValue(id);
+            if (ench == null) {
+                continue;
+            }
+            int orig = info.getInt(KEY_ORIG);
+            int red = info.getInt(KEY_RED);
+            int cur = Math.max(0, orig - red);
+
+            // Remove the vanilla line for the reduced enchantment if present
+            if (cur > 0) {
+                String expected = ench.getFullname(cur).getString();
+                tooltip.removeIf(c -> c.getString().equals(expected));
+            }
+
+            long remSec = Math.max(1L, (expire - gameTime + 19L) / 20L);
+            Component line = Component.translatable(ench.getDescriptionId())
+                    .append(Component.literal(" "))
+                    .append(roman(orig))
+                    .append(Component.literal("-"))
+                    .append(roman(red))
+                    .append(Component.literal(" (" + remSec + "s)"))
+                    .withStyle(ChatFormatting.RED);
+            weakenedLines.add(line);
+        }
+
+        if (!weakenedLines.isEmpty()) {
+            int insertIdx = Math.min(1, tooltip.size());
+            tooltip.addAll(insertIdx, weakenedLines);
+        }
+    }
+
+    private static Component roman(int lv) {
+        if (lv >= 1 && lv <= 10) {
+            return Component.translatable("enchantment.level." + lv);
+        }
+        return Component.literal(String.valueOf(lv));
     }
 }

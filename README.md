@@ -10,7 +10,10 @@ A Minecraft 1.20.1 (Forge) enemy-scaling mod reinterpreting **L2Hostility**. It 
 
 - **依存関係 / Dependencies**:
   - 必須 / Required: **Minecraft 1.20.1**, **Forge (47.4.0+)**, **L2Library (2.4.0+)**
-  - 任意 / Optional: **Curios API**（導入時のみ「黙示録」の対象にCuriosスロットが含まれます / Included in Apocalypse targets if installed）
+  - 任意互換 / Optional Compatibility:
+    - **Curios API**: 導入時、「黙示録」「封印」の対象に Curios スロットが含まれます / Included in Apocalypse and Seal targets when installed.
+    - **Jade**: モブのレベルと特性を Jade のオーバーレイに表示します / Displays mob level and traits in Jade HUD.
+    - **Neat** (https://www.curseforge.com/minecraft/mc-mods/neat): 頭上のレベル・特性表示が Neat の体力バーと重ならないよう位置を自動調整します / Automatically offsets overhead level/trait rendering to avoid overlapping Neat health bars.
 - **段階的アンロック（不可逆） / Irreversible Unlock**:
   - 初期状態では難易度・レベルシステムは停止しています。
   - インベントリ右上の「敵対度 / Hostility」タブから **「敵対の循環に踏み入る / Step into the Cycle of Hostility」** をクリックするか、**ネザーへ到達**することで稼働します。

@@ -1,5 +1,37 @@
 # Changelog / 変更履歴
 
+## [0.2.5-beta] - 2026-11-16
+
+### 日本語
+- **UI 改行＆全体スクロール対応**: `HostilityInfoScreen` で自動改行と全体スクロール（スクロールバー付き）に対応し、GUI サイズ設定に左右されず全項目を閲覧できるよう改善。
+- **Jade 連携 & オーバーヘッド描画改善 & Neat 互換**:
+  - `Jade` プラグイン（`RoHostilityJadePlugin`）を追加し、モブのレベルと特性を表示。
+  - 頭上レベル・特性描画の視線・距離判定を本家準拠に改善し、`Neat` 導入時は表示位置を自動オフセットして重なりを回避（`README.md` にリンク記載）。
+- **ツールチップ視認性向上**:
+  - **非現実特攻**: 低下中のエンチャントを赤文字で `エンチャント名 元のLv-低下Lv (残り秒数)` 形式で表示。
+  - **黙示録**: 弱体化中の旨（赤文字）と `-10%` 適用後の実効 Attribute 値を動的表示。
+- **対象スロット限定**: 黙示録・封印・非現実特攻の対象を「防具スロット（＋Curios）」のみに限定し、メインハンド／オフハンドを対象外に修正。
+- **バランス・効果修正**:
+  - 衰弱特性の付与効果を「ウィザー系の衰弱 (`MobEffects.WITHER`)」へ修正。
+  - 生命吸収の回復割合を `0.5%` に引き上げ。
+  - 加護特性の魔法判定を `l2damagetracker:magic` / `forge:is_magic` / `irons_spellbooks:magic` や `magic`/`spell` 系ダメージタイプに対応させ、ISS 呪文等も正しく 70% 軽減するよう修正。
+- **コマンドメッセージ修正**: 危険度設定・変更コマンドの引数順バグを修正。
+
+### English
+- **UI Word Wrap & Full Scrolling**: Added line wrapping and full-panel scrolling with scrollbar to `HostilityInfoScreen` independent of GUI scale.
+- **Jade Integration, Overhead Rendering & Neat Compatibility**:
+  - Added `RoHostilityJadePlugin` to display mob level and traits in Jade.
+  - Improved overhead rendering visibility (line-of-sight + 32-block range) and automatically offset rendering when `Neat` is installed (added CurseForge link to `README.md`).
+- **Tooltip Enhancements**:
+  - **Unreality**: Displays weakened enchantments in red as `Enchantment OrigLv-ReducedLv (Xs)`.
+  - **Apocalypse**: Displays active weakening notice and dynamic `-10%` effective attribute values.
+- **Slot Scope Fix**: Restricted Apocalypse, Seal, and Unreality to armor slots (+ Curios), excluding mainhand/offhand.
+- **Effect & Scaling Fixes**:
+  - Fixed Weakness/Wither Strike to apply `MobEffects.WITHER`.
+  - Increased Lifesteal recovery to `0.5%` max HP on hit.
+  - Expanded Protection trait magic detection (`l2damagetracker:magic`, `forge:is_magic`, `irons_spellbooks:magic`, and `magic`/`spell` damage types) so ISS spells are properly reduced by 70%.
+- **Command Message Fix**: Fixed argument ordering in danger `set` and `add` translation strings.
+
 ## [0.2.4-beta] - 2026-11-16
 
 ### 日本語

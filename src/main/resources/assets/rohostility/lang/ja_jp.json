@@ -30,10 +30,13 @@
   "item.rohostility.debug_mob_editor.applied": "Lv.%s・特性 %s個 でモブをリスポーンさせました。",
 
   "command.rohostility.unlock": "%s 人のプレイヤーの敵対システムを解放しました。",
-  "command.rohostility.danger.set": "%s 人のプレイヤーの危険度を %s に設定しました。",
-  "command.rohostility.danger.add": "%s 人のプレイヤーの危険度を %s 変化させました。",
+  "command.rohostility.danger.set": "%2$s 人のプレイヤーの危険度を %1$s に設定しました。",
+  "command.rohostility.danger.add": "%2$s 人のプレイヤーの危険度を %1$s 変化させました。",
   "command.rohostility.trait.add": "%s 体のモブに特性 %s を付与しました。",
   "command.rohostility.trait.unknown": "不明な特性IDです: %s",
+
+  "jade.rohostility.level": "敵対レベル Lv.%s",
+  "tooltip.rohostility.apocalypse_weakened": "黙示録により弱体化中 (Attribute恩恵 -10%% / 残り%s秒)",
 
   "death.attack.rohostility.armor_pierce": "%1$s は %2$s の装甲貫通攻撃に貫かれた",
   "death.attack.rohostility.protection_pierce": "%1$s は %2$s の加護貫通攻撃に打ち砕かれた",
@@ -61,7 +64,7 @@
   "trait.rohostility.seal": "封印",
   "trait.rohostility.seal.desc": "攻撃時10%で装備/Curios1つを5tick封印（自動解除）",
   "trait.rohostility.lifesteal": "生命吸収",
-  "trait.rohostility.lifesteal.desc": "攻撃ヒット時、最大HPの0.1%回復",
+  "trait.rohostility.lifesteal.desc": "攻撃ヒット時、最大HPの0.5%回復",
   "trait.rohostility.armor_pierce": "装甲貫通",
   "trait.rohostility.armor_pierce.desc": "攻撃の5%が物理貫通ダメージになる",
   "trait.rohostility.protection_pierce": "加護貫通",

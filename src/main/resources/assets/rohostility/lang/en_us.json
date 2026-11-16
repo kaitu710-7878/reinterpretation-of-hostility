@@ -30,10 +30,13 @@
   "item.rohostility.debug_mob_editor.applied": "Respawned mob with Lv.%s and %s traits.",
 
   "command.rohostility.unlock": "Unlocked hostility system for %s player(s).",
-  "command.rohostility.danger.set": "Set danger points to %s for %s player(s).",
-  "command.rohostility.danger.add": "Adjusted danger points by %s for %s player(s).",
+  "command.rohostility.danger.set": "Set danger points to %1$s for %2$s player(s).",
+  "command.rohostility.danger.add": "Adjusted danger points by %1$s for %2$s player(s).",
   "command.rohostility.trait.add": "Added trait %s to %s mob(s).",
   "command.rohostility.trait.unknown": "Unknown trait id: %s",
+
+  "jade.rohostility.level": "Hostility Lv.%s",
+  "tooltip.rohostility.apocalypse_weakened": "Weakened by Apocalypse (-10% Attributes, %ss left)",
 
   "death.attack.rohostility.armor_pierce": "%1$s was pierced through armor by %2$s",
   "death.attack.rohostility.protection_pierce": "%1$s had their protection pierced by %2$s",
@@ -61,7 +64,7 @@
   "trait.rohostility.seal": "Seal",
   "trait.rohostility.seal.desc": "10% chance on hit to seal 1 random gear/Curio for 5 ticks.",
   "trait.rohostility.lifesteal": "Lifesteal",
-  "trait.rohostility.lifesteal.desc": "Restores 0.1% max HP on hit.",
+  "trait.rohostility.lifesteal.desc": "Restores 0.5% max HP on hit.",
   "trait.rohostility.armor_pierce": "Armor Pierce",
   "trait.rohostility.armor_pierce.desc": "5% of attack damage becomes armor-piercing physical damage.",
   "trait.rohostility.protection_pierce": "Protection Pierce",
@@ -82,8 +85,8 @@
   "trait.rohostility.inspire.desc": "Summons 3 Vexes every 20s; +5% ATK/SPD/Armor per active Vex.",
   "trait.rohostility.poison_strike": "Poison Strike",
   "trait.rohostility.poison_strike.desc": "50% chance on hit to inflict Poison I for 6s.",
-  "trait.rohostility.weakness_strike": "Weakness Strike",
-  "trait.rohostility.weakness_strike.desc": "50% chance on hit to inflict Weakness I for 6s.",
+  "trait.rohostility.weakness_strike": "Wither Strike",
+  "trait.rohostility.weakness_strike.desc": "50% chance on hit to inflict Wither I for 6s.",
   "trait.rohostility.resentment": "Resentment",
   "trait.rohostility.resentment.desc": "40% chance on hit to inflict Curse I for 8s (-50% healing)."
 }
