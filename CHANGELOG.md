@@ -1,5 +1,13 @@
 # Changelog / 変更履歴
 
+## [0.2.1-beta] - 2026-11-16
+
+### 日本語
+- **起動時クラッシュ修正**: L2Library 側で自動登録される Capability を MOD メインクラス側でも二重登録していたため `IllegalArgumentException: Cannot register a capability implementation multiple times` が発生していた問題を修正。
+
+### English
+- **Startup Crash Fix**: Fixed `IllegalArgumentException: Cannot register a capability implementation multiple times` caused by manually registering capabilities that L2Library already registers automatically.
+
 ## [0.2.0-beta] - 2026-11-16
 
 ### 日本語

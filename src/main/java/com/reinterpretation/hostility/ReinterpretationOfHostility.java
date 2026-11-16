@@ -8,7 +8,6 @@ import com.reinterpretation.hostility.config.ModConfig;
 import com.reinterpretation.hostility.effect.ModEffects;
 import com.reinterpretation.hostility.item.ModItems;
 import com.reinterpretation.hostility.network.NetworkHandler;
-import net.minecraftforge.common.capabilities.RegisterCapabilitiesEvent;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.fml.ModLoadingContext;
 import net.minecraftforge.fml.common.Mod;
@@ -35,17 +34,10 @@ public class ReinterpretationOfHostility {
         EntityDebuffCapability.register();
 
         modEventBus.addListener(this::commonSetup);
-        modEventBus.addListener(this::registerCapabilities);
     }
 
     private void commonSetup(final FMLCommonSetupEvent event) {
         event.enqueueWork(NetworkHandler::register);
         LOGGER.info("Reinterpretation of Hostility common setup complete.");
-    }
-
-    private void registerCapabilities(final RegisterCapabilitiesEvent event) {
-        event.register(PlayerDifficultyCapability.class);
-        event.register(MobTraitCapability.class);
-        event.register(EntityDebuffCapability.class);
     }
 }
