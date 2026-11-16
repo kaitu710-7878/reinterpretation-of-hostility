@@ -18,6 +18,7 @@ public class ModConfig {
 
     public static class Common {
         public final ForgeConfigSpec.IntValue maxLevel;
+        public final ForgeConfigSpec.DoubleValue maxDangerCap;
         public final ForgeConfigSpec.IntValue traitMinLevel;
         public final ForgeConfigSpec.IntValue maxTraitCount;
         public final ForgeConfigSpec.DoubleValue difficultyGainMultiplier;
@@ -41,8 +42,12 @@ public class ModConfig {
                     .push("general");
 
             maxLevel = builder
-                    .comment("Maximum mob level cap regardless of player danger level.")
+                    .comment("Base maximum mob level cap (increased by End / modded dimension visits).")
                     .defineInRange("maxLevel", 600, 1, 10000);
+
+            maxDangerCap = builder
+                    .comment("Hard stopper cap for accumulated player danger points.")
+                    .defineInRange("maxDangerCap", 2000.0, 1.0, 100000.0);
 
             traitMinLevel = builder
                     .comment("Minimum mob level required for traits to appear.")

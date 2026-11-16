@@ -5,39 +5,46 @@ import com.reinterpretation.hostility.config.ModConfig;
 import com.reinterpretation.hostility.network.NetworkHandler;
 import com.reinterpretation.hostility.network.UnlockHostilityC2SPacket;
 import com.reinterpretation.hostility.trait.TraitType;
+import dev.xkmc.l2tabs.tabs.contents.BaseTextScreen;
+import dev.xkmc.l2tabs.tabs.core.TabManager;
+import dev.xkmc.l2tabs.tabs.core.TabToken;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
-import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.client.gui.screens.inventory.InventoryScreen;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.player.Player;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 
-public class HostilityInfoScreen extends Screen {
+public class HostilityInfoScreen extends BaseTextScreen {
 
-    private static final int PANEL_WIDTH = 360;
-    private static final int PANEL_HEIGHT = 230;
+    private static final ResourceLocation BG_TEXTURE =
+            new ResourceLocation("l2tabs", "textures/gui/empty.png");
 
+    private final TabToken<TabHostility> tabToken;
+    private TabManager tabManager;
     private Button unlockButton;
     private int scrollOffset = 0;
 
-    public HostilityInfoScreen() {
-        super(Component.translatable("screen.rohostility.info.title"));
+    public HostilityInfoScreen(TabToken<TabHostility> tabToken) {
+        super(Component.translatable("screen.rohostility.info.title"), BG_TEXTURE);
+        this.tabToken = tabToken;
     }
 
     @Override
-    protected void init() {
+    public void init() {
         super.init();
-        int left = (this.width - PANEL_WIDTH) / 2;
-        int top = (this.height - PANEL_HEIGHT) / 2;
+        this.tabManager = new TabManager(this);
+        this.tabManager.init(this::addRenderableWidget, this.tabToken);
 
         Player player = Minecraft.getInstance().player;
         boolean unlocked = player != null && PlayerDifficultyCapability.get(player).isUnlocked();
+        this.unlockButton = null;
 
         if (!unlocked) {
             this.unlockButton = this.addRenderableWidget(
@@ -48,26 +55,10 @@ public class HostilityInfoScreen extends Screen {
                                         btn.active = false;
                                     }
                             )
-                            .bounds(left + (PANEL_WIDTH - 200) / 2, top + 115, 200, 20)
+                            .bounds(this.leftPos + (this.imageWidth - 154) / 2, this.topPos + 92, 154, 20)
                             .build()
             );
         }
-
-        this.addRenderableWidget(
-                Button.builder(
-                                Component.translatable("screen.rohostility.info.back"),
-                                btn -> {
-                                    Minecraft mc = Minecraft.getInstance();
-                                    if (mc.player != null) {
-                                        mc.setScreen(new InventoryScreen(mc.player));
-                                    } else {
-                                        this.onClose();
-                                    }
-                                }
-                        )
-                        .bounds(left + PANEL_WIDTH - 70, top + PANEL_HEIGHT - 26, 60, 20)
-                        .build()
-        );
     }
 
     @Override
@@ -81,93 +72,100 @@ public class HostilityInfoScreen extends Screen {
 
     @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-        this.renderBackground(graphics);
-        int left = (this.width - PANEL_WIDTH) / 2;
-        int top = (this.height - PANEL_HEIGHT) / 2;
+        super.render(graphics, mouseX, mouseY, partialTick);
 
-        graphics.fill(left, top, left + PANEL_WIDTH, top + PANEL_HEIGHT, 0xCC181820);
-        graphics.renderOutline(left, top, PANEL_WIDTH, PANEL_HEIGHT, 0xFF666680);
-
-        graphics.drawCenteredString(this.font, this.title, this.width / 2, top + 10, 0xFFFFFF);
+        int x = this.leftPos + 10;
+        int y = this.topPos + 10;
+        graphics.drawString(this.font, this.title, x, y, 0x404040, false);
 
         Player player = Minecraft.getInstance().player;
         if (player == null) {
-            super.render(graphics, mouseX, mouseY, partialTick);
+            if (this.tabManager != null) {
+                this.tabManager.onToolTipRender(graphics, mouseX, mouseY);
+            }
             return;
         }
 
         PlayerDifficultyCapability cap = PlayerDifficultyCapability.get(player);
         if (!cap.isUnlocked()) {
             Component status = Component.translatable("screen.rohostility.info.locked")
-                    .withStyle(ChatFormatting.GRAY);
-            graphics.drawCenteredString(this.font, status, this.width / 2, top + 40, 0xAAAAAA);
+                    .withStyle(ChatFormatting.DARK_GRAY);
+            graphics.drawWordWrap(this.font, status, x, y + 18, this.imageWidth - 20, 0x404040);
 
             Component hint1 = Component.translatable("screen.rohostility.info.unlock_hint_1");
+            graphics.drawWordWrap(this.font, hint1, x, y + 36, this.imageWidth - 20, 0x404040);
+
             Component hint2 = Component.translatable("screen.rohostility.info.unlock_hint_2")
-                    .withStyle(ChatFormatting.RED);
-            graphics.drawCenteredString(this.font, hint1, this.width / 2, top + 68, 0xDDDDDD);
-            graphics.drawCenteredString(this.font, hint2, this.width / 2, top + 84, 0xFF6666);
+                    .withStyle(ChatFormatting.DARK_RED);
+            graphics.drawWordWrap(this.font, hint2, x, y + 60, this.imageWidth - 20, 0xAA0000);
         } else {
-            int dangerLevel = cap.getDangerLevel();
-            int maxLevel = ModConfig.COMMON.maxLevel.get();
+            double danger = cap.getDangerPoints();
+            double dangerCap = ModConfig.COMMON.maxDangerCap.get();
+            int effectiveMax = cap.getEffectiveMaxLevel();
+
+            int minLv = Mth.clamp((int) Math.round(danger * 0.85) - ModConfig.COMMON.levelRandomVariance.get(), 0, effectiveMax);
+            int maxLv = Mth.clamp((int) Math.round(danger * 1.15) + ModConfig.COMMON.levelRandomVariance.get(), 0, effectiveMax);
+
+            Component dangerText = Component.translatable(
+                    "screen.rohostility.info.danger_points_cap",
+                    String.format("%.1f", danger),
+                    String.format("%.0f", dangerCap)
+            );
+            graphics.drawString(this.font, dangerText, x, y + 14, 0x8B0000, false);
+
+            Component rangeText = Component.translatable(
+                    "screen.rohostility.info.level_range",
+                    minLv, maxLv
+            );
+            graphics.drawString(this.font, rangeText, x, y + 25, 0x202020, false);
+
+            Component maxLevelText = Component.translatable(
+                    "screen.rohostility.info.max_level_cap",
+                    effectiveMax,
+                    cap.isReachedEnd() ? 10 : 0,
+                    cap.getVisitedModDimensionCount() * 5
+            );
+            graphics.drawString(this.font, maxLevelText, x, y + 36, 0x004488, false);
+
             int traitMin = ModConfig.COMMON.traitMinLevel.get();
-
-            Component levelText = Component.translatable(
-                    "screen.rohostility.info.danger_level",
-                    dangerLevel,
-                    maxLevel
-            ).withStyle(ChatFormatting.GOLD);
-            graphics.drawString(this.font, levelText, left + 16, top + 30, 0xFFFFFF);
-
-            Component pointsText = Component.translatable(
-                    "screen.rohostility.info.danger_points",
-                    String.format("%.2f", cap.getDangerPoints())
-            ).withStyle(ChatFormatting.AQUA);
-            graphics.drawString(this.font, pointsText, left + 16, top + 44, 0xFFFFFF);
-
-            double mod = ModConfig.COMMON.statScalingModifier.get();
-            double hpMult = 1.0 + dangerLevel * ModConfig.COMMON.healthBonusPerLevel.get() * mod;
-            double dmgMult = 1.0 + dangerLevel * ModConfig.COMMON.damageBonusPerLevel.get() * mod;
-            Component scalingText = Component.translatable(
-                    "screen.rohostility.info.scaling",
-                    String.format("%.2fx", hpMult),
-                    String.format("%.2fx", dmgMult)
-            ).withStyle(ChatFormatting.GREEN);
-            graphics.drawString(this.font, scalingText, left + 16, top + 58, 0xFFFFFF);
-
             Component traitHeader = Component.translatable(
                     "screen.rohostility.info.traits_header",
                     traitMin
-            ).withStyle(dangerLevel >= traitMin ? ChatFormatting.YELLOW : ChatFormatting.DARK_GRAY);
-            graphics.drawString(this.font, traitHeader, left + 16, top + 76, 0xFFFFFF);
+            );
+            graphics.drawString(this.font, traitHeader, x, y + 49, 0x404040, false);
 
-            int listTop = top + 92;
-            int listBottom = top + PANEL_HEIGHT - 32;
-            int maxVisible = Math.max(1, (listBottom - listTop) / 12);
-
-            List<TraitType> enabledTraits = new ArrayList<>();
+            List<TraitType> sortedTraits = new ArrayList<>();
             for (TraitType type : TraitType.values()) {
                 if (type.isEnabled()) {
-                    enabledTraits.add(type);
+                    sortedTraits.add(type);
                 }
             }
+            sortedTraits.sort(Comparator.comparingInt(TraitType::getCost).thenComparing(TraitType::getId));
 
-            int maxScroll = Math.max(0, enabledTraits.size() - maxVisible);
+            int listTop = y + 61;
+            int listBottom = this.topPos + this.imageHeight - 10;
+            int maxVisible = Math.max(1, (listBottom - listTop) / 10);
+            int maxScroll = Math.max(0, sortedTraits.size() - maxVisible);
             scrollOffset = Mth.clamp(scrollOffset, 0, maxScroll);
 
-            int y = listTop;
-            for (int i = scrollOffset; i < Math.min(enabledTraits.size(), scrollOffset + maxVisible); i++) {
-                TraitType type = enabledTraits.get(i);
-                Component line = Component.literal("• ")
-                        .append(type.getDisplayName())
-                        .append(Component.literal(" (Cost " + type.getCost() + ") - ").withStyle(ChatFormatting.DARK_GRAY))
-                        .append(type.getDescription().withStyle(ChatFormatting.GRAY));
-                graphics.drawString(this.font, line, left + 18, y, 0xFFFFFF);
-                y += 12;
+            int rowY = listTop;
+            for (int i = scrollOffset; i < Math.min(sortedTraits.size(), scrollOffset + maxVisible); i++) {
+                TraitType type = sortedTraits.get(i);
+                Component line = Component.literal("[" + type.getCost() + "] ")
+                        .withStyle(ChatFormatting.DARK_GRAY)
+                        .append(type.getDisplayName());
+                graphics.drawString(this.font, line, x, rowY, 0xFFFFFF, false);
+
+                if (mouseX >= x && mouseX <= x + this.imageWidth - 20 && mouseY >= rowY && mouseY < rowY + 10) {
+                    graphics.renderTooltip(this.font, type.getDescription(), mouseX, mouseY);
+                }
+                rowY += 10;
             }
         }
 
-        super.render(graphics, mouseX, mouseY, partialTick);
+        if (this.tabManager != null) {
+            this.tabManager.onToolTipRender(graphics, mouseX, mouseY);
+        }
     }
 
     @Override
@@ -180,10 +178,5 @@ public class HostilityInfoScreen extends Screen {
             return true;
         }
         return super.mouseScrolled(mouseX, mouseY, delta);
-    }
-
-    @Override
-    public boolean isPauseScreen() {
-        return false;
     }
 }

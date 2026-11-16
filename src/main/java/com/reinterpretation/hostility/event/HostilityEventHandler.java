@@ -99,17 +99,15 @@ public final class HostilityEventHandler {
 
     @SubscribeEvent
     public static void onPlayerChangedDimension(PlayerEvent.PlayerChangedDimensionEvent event) {
-        if (event.getEntity() instanceof ServerPlayer player && event.getTo() == Level.NETHER) {
-            PlayerDifficultyCapability.get(player).unlock(player);
+        if (event.getEntity() instanceof ServerPlayer player) {
+            PlayerDifficultyCapability.get(player).onDimensionVisited(player, player.level());
         }
     }
 
     @SubscribeEvent
     public static void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
         if (event.getEntity() instanceof ServerPlayer player) {
-            if (player.level().dimension() == Level.NETHER) {
-                PlayerDifficultyCapability.get(player).unlock(player);
-            }
+            PlayerDifficultyCapability.get(player).onDimensionVisited(player, player.level());
             PlayerDifficultyCapability.HOLDER.network.toClientSyncAll(player);
         }
     }

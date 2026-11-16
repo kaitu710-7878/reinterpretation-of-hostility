@@ -1,5 +1,23 @@
 # Changelog / 変更履歴
 
+## [0.2.2-beta] - 2026-11-16
+
+### 日本語
+- **L2Tabs ベースのタブUI統合**: 本家 L2Hostility と同じ `L2Tabs` 機構（`TabRegistry` / `BaseTextScreen`）による「敵対度」タブへ移行し、システム開始ボタン・危険度・レベル帯・最大レベル上限・コスト順の特性一覧を表示。
+- **危険度とレベルの相関乱数化＆ストッパー**: 危険度は上限 `2000.0` まで上昇し、モブレベルは危険度との相関＋乱数（`0.85〜1.15倍 ± 揺らぎ`）で算出して上限レベルでキャップするよう変更。
+- **ディメンション到達による最大レベル拡張**: エンド到達で最大レベル `+10`、MOD製ディメンション到達で 1種につき `+5` を加算。
+- **コマンドとデバッグ用アイテムを追加**:
+  - `/rohostility danger set|add`, `/rohostility trait add`, `/rohostility unlock`
+  - `rohostility:debug_mob_editor`（ミッシングテクスチャ、GUIでレベルと特性を設定し、敵モブへ右クリックで他MODバフ含めリスポーン再計算）。
+
+### English
+- **L2Tabs Integration**: Migrated the Hostility tab to `L2Tabs` (`TabRegistry` / `BaseTextScreen`), featuring the system unlock button, danger display, mob level range, max level cap, and cost-sorted trait list.
+- **Correlated Randomized Level Scaling & Danger Stopper**: Capped danger points at `2000.0` while scaling mob levels via danger correlation + randomness (`0.85-1.15x +/- variance`) clamped by the player's effective max level.
+- **Dimension Max Level Expansion**: Visiting the End grants `+10` max level, and each unique modded dimension visited grants `+5` max level.
+- **Commands & Debug Item**:
+  - Added `/rohostility danger set|add`, `/rohostility trait add`, and `/rohostility unlock`.
+  - Added `rohostility:debug_mob_editor` (missing texture) with a GUI to configure level/traits and respawn target hostile mobs on right-click.
+
 ## [0.2.1-beta] - 2026-11-16
 
 ### 日本語

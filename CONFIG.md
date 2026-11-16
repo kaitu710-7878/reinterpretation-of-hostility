@@ -9,7 +9,8 @@ The configuration file is generated at `config/rohostility-common.toml`.
 
 | パラメータ / Key | 型 / Type | デフォルト / Default | 説明 / Description |
 | --- | --- | --- | --- |
-| `maxLevel` | Integer (`1..10000`) | `600` | モブレベルの上限 / Maximum mob level cap |
+| `maxLevel` | Integer (`1..10000`) | `600` | 基本モブレベル上限（エンド・他MODディメンション到達で増加） / Base maximum mob level cap |
+| `maxDangerCap` | Double (`1.0..100000.0`) | `2000.0` | 蓄積危険度のストッパー上限 / Hard cap for accumulated danger points |
 | `traitMinLevel` | Integer (`1..10000`) | `90` | 特性が出現し始める最低レベル / Minimum level for traits to appear |
 | `maxTraitCount` | Integer (`1..20`) | `8` | 1体のモブに付与される最大特性数 / Maximum traits per mob |
 | `difficultyGainMultiplier` | Double (`0.0..100.0`) | `0.5` | 敵討伐時の危険度上昇量への全体倍率 / Global multiplier for kill danger gain |

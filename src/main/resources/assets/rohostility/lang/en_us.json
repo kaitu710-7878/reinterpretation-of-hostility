@@ -8,14 +8,32 @@
   "screen.rohostility.info.back": "Back",
   "screen.rohostility.info.danger_level": "Danger Level: %s / %s",
   "screen.rohostility.info.danger_points": "Accumulated Danger Points: %s",
+  "screen.rohostility.info.danger_points_cap": "Danger: %s / %s",
+  "screen.rohostility.info.level_range": "Mob Level Range: Lv.%s - Lv.%s",
+  "screen.rohostility.info.max_level_cap": "Max Level Cap: %s (End +%s, ModDims +%s)",
   "screen.rohostility.info.scaling": "Current Scaling: HP %s / ATK %s",
-  "screen.rohostility.info.traits_header": "Mob Traits (Appear at Lv.%s+, Scroll to view):",
+  "screen.rohostility.info.traits_header": "Mob Traits (Lv.%s+, sorted by cost):",
+
+  "screen.rohostility.debug_editor.title": "Debug Mob Editor",
+  "screen.rohostility.debug_editor.level": "Target Level:",
+  "screen.rohostility.debug_editor.save": "Save",
+  "screen.rohostility.debug_editor.clear": "Clear",
 
   "effect.rohostility.revive_prevention": "Revive Prevention",
   "effect.rohostility.curse": "Curse",
 
   "item.rohostility.sealed_item": "Sealed Item",
   "item.rohostility.sealed_item.desc": "Temporarily sealed by Hostility; will restore shortly.",
+  "item.rohostility.debug_mob_editor": "Debug Mob Editor",
+  "item.rohostility.debug_mob_editor.desc": "Right-click air to configure, right-click hostile mob to respawn with overrides.",
+  "item.rohostility.debug_mob_editor.info": "Configured: Lv.%s, %s traits",
+  "item.rohostility.debug_mob_editor.applied": "Respawned mob with Lv.%s and %s traits.",
+
+  "command.rohostility.unlock": "Unlocked hostility system for %s player(s).",
+  "command.rohostility.danger.set": "Set danger points to %s for %s player(s).",
+  "command.rohostility.danger.add": "Adjusted danger points by %s for %s player(s).",
+  "command.rohostility.trait.add": "Added trait %s to %s mob(s).",
+  "command.rohostility.trait.unknown": "Unknown trait id: %s",
 
   "death.attack.rohostility.armor_pierce": "%1$s was pierced through armor by %2$s",
   "death.attack.rohostility.protection_pierce": "%1$s had their protection pierced by %2$s",

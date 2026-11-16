@@ -44,6 +44,14 @@ public final class NetworkHandler {
                 SyncMobTraitsS2CPacket::handle,
                 Optional.of(NetworkDirection.PLAY_TO_CLIENT)
         );
+        CHANNEL.registerMessage(
+                nextId++,
+                SaveDebugEditorC2SPacket.class,
+                SaveDebugEditorC2SPacket::encode,
+                SaveDebugEditorC2SPacket::decode,
+                SaveDebugEditorC2SPacket::handle,
+                Optional.of(NetworkDirection.PLAY_TO_SERVER)
+        );
     }
 
     public static void sendToServer(Object packet) {

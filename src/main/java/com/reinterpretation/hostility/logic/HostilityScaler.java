@@ -73,7 +73,8 @@ public final class HostilityScaler {
             return;
         }
 
-        int baseDanger = PlayerDifficultyCapability.get(nearest).getDangerLevel();
+        PlayerDifficultyCapability playerCap = PlayerDifficultyCapability.get(nearest);
+        double danger = playerCap.getDangerPoints();
         int dimBonus = 0;
         if (serverLevel.dimension() == Level.NETHER) {
             dimBonus = ModConfig.COMMON.netherDimensionBonus.get();
@@ -82,11 +83,12 @@ public final class HostilityScaler {
         }
 
         RandomSource random = entity.getRandom();
+        double factor = 0.85 + random.nextDouble() * 0.30;
         int variance = ModConfig.COMMON.levelRandomVariance.get();
         int offset = variance > 0 ? random.nextInt(variance * 2 + 1) - variance : 0;
 
-        int maxLevel = ModConfig.COMMON.maxLevel.get();
-        int level = Mth.clamp(baseDanger + dimBonus + offset, 0, maxLevel);
+        int maxLevel = playerCap.getEffectiveMaxLevel();
+        int level = Mth.clamp((int) Math.round(danger * factor) + dimBonus + offset, 0, maxLevel);
         cap.level = level;
 
         if (level > 0) {
@@ -101,7 +103,7 @@ public final class HostilityScaler {
         syncToTracking(entity, cap);
     }
 
-    private static void applyTraitSpawnAttributes(LivingEntity entity, MobTraitCapability cap) {
+    public static void applyTraitSpawnAttributes(LivingEntity entity, MobTraitCapability cap) {
         if (cap.hasTrait(TraitType.STEP_UP)) {
             addPermanentModifier(entity, ForgeMod.STEP_HEIGHT_ADDITION.get(), STEP_UP_UUID,
                     "rohostility_step_up", 100.0, AttributeModifier.Operation.ADDITION);
@@ -150,7 +152,7 @@ public final class HostilityScaler {
         return best;
     }
 
-    private static void applyLevelStats(LivingEntity entity, int level) {
+    public static void applyLevelStats(LivingEntity entity, int level) {
         double modifier = ModConfig.COMMON.statScalingModifier.get();
         if (modifier <= 0.0) {
             return;

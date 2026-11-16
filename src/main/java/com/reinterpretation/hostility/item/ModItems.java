@@ -15,6 +15,9 @@ public final class ModItems {
     public static final RegistryObject<Item> SEALED_ITEM =
             ITEMS.register("sealed_item", SealedItem::new);
 
+    public static final RegistryObject<Item> DEBUG_MOB_EDITOR =
+            ITEMS.register("debug_mob_editor", DebugMobEditorItem::new);
+
     private ModItems() {
     }
 
