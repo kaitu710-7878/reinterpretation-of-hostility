@@ -46,8 +46,8 @@ public class ModConfig {
                     .defineInRange("maxDangerCap", 2000.0, 1.0, 100000.0);
 
             traitMinLevel = builder
-                    .comment("Minimum mob level required for traits to appear.")
-                    .defineInRange("traitMinLevel", 90, 1, 10000);
+                    .comment("Minimum mob level required for traits to appear (1 = immediate when level >= trait cost).")
+                    .defineInRange("traitMinLevel", 1, 1, 10000);
 
             maxTraitCount = builder
                     .comment("Maximum number of traits a single mob can receive.")

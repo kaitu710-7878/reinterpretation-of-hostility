@@ -12,7 +12,7 @@
   "screen.rohostility.info.level_range": "Mob Lv: %s - %s",
   "screen.rohostility.info.max_level_cap": "Max Lv: %s (End+%s Mod+%s)",
   "screen.rohostility.info.scaling": "Current Scaling: HP %s / ATK %s",
-  "screen.rohostility.info.traits_header": "Traits (Lv.%s+, by cost):",
+  "screen.rohostility.info.traits_header": "Traits (by cost):",
 
   "screen.rohostility.debug_editor.title": "Debug Mob Editor",
   "screen.rohostility.debug_editor.level": "Target Level:",

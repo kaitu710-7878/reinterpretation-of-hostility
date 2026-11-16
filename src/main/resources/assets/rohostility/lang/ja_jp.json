@@ -12,7 +12,7 @@
   "screen.rohostility.info.level_range": "出現Lv: %s 〜 %s",
   "screen.rohostility.info.max_level_cap": "上限Lv: %s (End+%s Mod+%s)",
   "screen.rohostility.info.scaling": "現在のステータス補正: HP %s / 攻撃力 %s",
-  "screen.rohostility.info.traits_header": "特性 (Lv.%s〜 / コスト順):",
+  "screen.rohostility.info.traits_header": "特性 (コスト順):",
 
   "screen.rohostility.debug_editor.title": "デバッグ用モブ編集ツール",
   "screen.rohostility.debug_editor.level": "設定レベル:",

@@ -182,8 +182,7 @@ public class HostilityInfoScreen extends BaseTextScreen {
         ), maxW, 0x004488, null);
 
         addWrapped(lines, Component.translatable(
-                "screen.rohostility.info.traits_header",
-                ModConfig.COMMON.traitMinLevel.get()
+                "screen.rohostility.info.traits_header"
         ), maxW, 0x404040, null);
 
         List<TraitType> sortedTraits = new ArrayList<>();

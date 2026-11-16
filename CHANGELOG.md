@@ -1,5 +1,15 @@
 # Changelog / 変更履歴
 
+## [0.2.7-beta] - 2026-11-16
+
+### 日本語
+- **特性出現レベル制限の撤廃**: `traitMinLevel` のデフォルト値を `90` から `1` へ変更し、モブのレベル（コスト予算）が特性コスト以上であれば即座に特性を獲得できるよう調整（UIの見出し表記および `CONFIG.md` も同期更新）。
+- **README.md 最新化**: 全24種類の特性一覧、危険度・レベル上限システム、コマンド＆デバッグツール、任意互換MOD情報を最新の仕様に合わせて全面更新。
+
+### English
+- **Removed Trait Minimum Level Gate**: Changed default `traitMinLevel` from `90` to `1` so mobs can immediately acquire traits as soon as their level meets the trait cost (updated UI header and `CONFIG.md`).
+- **Updated README.md**: Updated documentation to reflect all 24 traits, current danger/level cap mechanics, commands, debug item, and optional mod integrations.
+
 ## [0.2.6-beta] - 2026-11-16
 
 ### 日本語
