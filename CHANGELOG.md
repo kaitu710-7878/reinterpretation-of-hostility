@@ -1,5 +1,13 @@
 # Changelog / 変更履歴
 
+## [0.2.10-beta] - 2026-11-17
+
+### 日本語
+- **デバッグ用モブ編集UIのスクロール・レスポンシブ対応**: 特性数の増加およびGUIスケール設定によって画面からはみ出さないよう、ウィンドウサイズに応じたパネルサイズ自動調整と、クリッピング（Scissor）＋スクロールバー付きのスクロール一覧へ改修。
+
+### English
+- **Scrollable & Responsive Debug Mob Editor UI**: Added dynamic panel sizing, scissored trait grid viewport, and mouse-wheel scrolling with scrollbar so the Debug Mob Editor never overflows regardless of GUI scale or trait count.
+
 ## [0.2.9-beta] - 2026-11-17
 
 ### 日本語
