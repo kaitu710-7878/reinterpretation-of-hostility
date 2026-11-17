@@ -1,5 +1,15 @@
 # Changelog / 変更履歴
 
+## [0.2.9-beta] - 2026-11-17
+
+### 日本語
+- **精神撹乱のフォールバック削除**: `L2DamageTracker`（`l2damagetracker:magic_damage`）を直接参照する前提とし、未導入時のフォールバック処理を削除。
+- **吸引・反発の垂直ベクトル削除**: 水平方向ベクトルのみを加算するよう修正（Y軸方向への加算なし）。
+
+### English
+- **Removed Mental Disruption Fallback**: Removed fallback damage scaling so Mental Disruption relies directly on `l2damagetracker:magic_damage`.
+- **Horizontal-Only Pull & Repulse**: Removed vertical (`Y`) velocity addition from Pull and Repulse vector impulses.
+
 ## [0.2.8-beta] - 2026-11-17
 
 ### 日本語

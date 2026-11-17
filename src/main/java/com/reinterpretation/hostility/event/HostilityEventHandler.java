@@ -431,7 +431,7 @@ public final class HostilityEventHandler {
         double strength = 0.9; // Equivalent to Knockback I (0.4 base + 0.5 enchant) without KB resistance
         target.setDeltaMovement(target.getDeltaMovement().add(
                 (dx / horiz) * strength,
-                0.25,
+                0.0,
                 (dz / horiz) * strength
         ));
         target.hurtMarked = true;
@@ -552,13 +552,6 @@ public final class HostilityEventHandler {
 
         if (handlingPierceDamage) {
             return;
-        }
-
-        if (source.getEntity() instanceof LivingEntity attacker) {
-            EntityDebuffCapability attackerDebuff = EntityDebuffCapability.getOrNull(attacker);
-            if (attackerDebuff != null && !attackerDebuff.hasL2MagicDamageAttribute() && isMagicDamage(source)) {
-                event.setAmount((float) (event.getAmount() * attackerDebuff.getMentalDisruptionFallbackMultiplier()));
-            }
         }
 
         // Offensive traits from attacker mob (supports discarded Creepers via PersistentData fallback)

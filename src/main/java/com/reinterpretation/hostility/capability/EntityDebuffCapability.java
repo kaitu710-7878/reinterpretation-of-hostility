@@ -112,15 +112,6 @@ public class EntityDebuffCapability extends GeneralCapabilityTemplate<LivingEnti
         updateParalysisModifier(entity);
     }
 
-    public boolean hasL2MagicDamageAttribute() {
-        return ForgeRegistries.ATTRIBUTES.getValue(L2DT_MAGIC_DAMAGE_ID) != null;
-    }
-
-    public double getMentalDisruptionFallbackMultiplier() {
-        int count = mentalDisruptionExpireTicks.size();
-        return count <= 0 ? 1.0 : Math.max(0.01, 1.0 - 0.015 * count);
-    }
-
     public void clearPlunder(LivingEntity entity) {
         if (!plunderExpireTicks.isEmpty()) {
             plunderExpireTicks.clear();
