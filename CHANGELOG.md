@@ -1,5 +1,13 @@
 # Changelog / 変更履歴
 
+## [0.2.12-beta] - 2026-11-17
+
+### 日本語
+- **幻影 (`illusion`) の配置ロジックをバニライリュージョナー準拠へ改善**: 2体の幻影が常に一直線上に並ばないよう、各幻影ごとに独立した角度・距離オフセット（60tickごとに独立位置へ補間移動）で描画するよう修正。
+
+### English
+- **Vanilla-Illusioner-Style Decoy Placement**: Updated Illusion decoys to use independent randomized offsets per decoy (shifting every 60 ticks with smooth interpolation) instead of collinear symmetric placement.
+
 ## [0.2.11-beta] - 2026-11-17
 
 ### 日本語

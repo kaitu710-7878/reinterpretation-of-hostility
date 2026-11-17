@@ -161,21 +161,24 @@ public final class ClientEvents {
             if (cap.hasTrait(TraitType.ILLUSION) && !entity.isInvisible()
                     && mc.player != null && entity.distanceToSqr(mc.player) <= 2304.0) {
                 float partialTick = event.getPartialTick();
-                // Deterministic fixed angle per entity (no spinning around the body)
-                long seed = entity.getUUID().getLeastSignificantBits() ^ entity.getUUID().getMostSignificantBits();
-                double baseAngle = ((seed & 0xFFFFL) / 65536.0) * (Math.PI * 2.0);
-                double sway = 1.6 + Math.sin((entity.tickCount + partialTick) * 0.12) * 0.15;
+                // Vanilla Illusioner-style independent offsets per decoy, shifting every 60 ticks
+                long baseSeed = entity.getUUID().getLeastSignificantBits() ^ entity.getUUID().getMostSignificantBits();
+                int period = entity.tickCount / 60;
+                int inPeriod = entity.tickCount % 60;
+                float transition = Mth.clamp((inPeriod + partialTick) / 8.0f, 0.0f, 1.0f);
                 float yaw = Mth.lerp(partialTick, entity.yRotO, entity.getYRot());
                 EntityRenderer<LivingEntity> renderer =
                         (EntityRenderer<LivingEntity>) mc.getEntityRenderDispatcher().getRenderer(entity);
                 renderingIllusion = true;
                 try {
                     for (int i = 0; i < 2; i++) {
-                        double angle = baseAngle + (i == 0 ? 0.0 : Math.PI);
-                        double dx = Math.cos(angle) * sway;
-                        double dz = Math.sin(angle) * sway;
+                        double[] prev = illusionOffset(baseSeed, i, period - 1);
+                        double[] curr = illusionOffset(baseSeed, i, period);
+                        double dx = Mth.lerp(transition, prev[0], curr[0]);
+                        double dz = Mth.lerp(transition, prev[1], curr[1]);
+                        double sway = Math.sin((entity.tickCount + partialTick + i * 17.0) * 0.15) * 0.08;
                         poseStack.pushPose();
-                        poseStack.translate(dx, 0.0, dz);
+                        poseStack.translate(dx + sway, 0.0, dz - sway);
                         renderer.render(entity, yaw, partialTick, poseStack, buffer, packedLight);
                         poseStack.popPose();
                     }
@@ -229,6 +232,20 @@ public final class ClientEvents {
             }
 
             poseStack.popPose();
+        }
+
+        private static double[] illusionOffset(long baseSeed, int index, int period) {
+            long h1 = mix64(baseSeed ^ (index * 0x9E3779B97F4A7C15L) ^ (period * 0xBF58476D1CE4E5B9L));
+            long h2 = mix64(h1 ^ 0x94D049BB133111EBL);
+            double angle = ((h1 & 0xFFFFL) / 65536.0) * (Math.PI * 2.0);
+            double dist = 1.2 + ((h2 & 0xFFFFL) / 65536.0) * 1.6;
+            return new double[]{Math.cos(angle) * dist, Math.sin(angle) * dist};
+        }
+
+        private static long mix64(long z) {
+            z = (z ^ (z >>> 30)) * 0xBF58476D1CE4E5B9L;
+            z = (z ^ (z >>> 27)) * 0x94D049BB133111EBL;
+            return z ^ (z >>> 31);
         }
     }
 }
