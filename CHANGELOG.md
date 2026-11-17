@@ -1,5 +1,17 @@
 # Changelog / 変更履歴
 
+## [0.2.11-beta] - 2026-11-17
+
+### 日本語
+- **幻影 (`illusion`) の角度固定化**: 本体を中心に回転し続ける仕様を改め、エンティティごとに内部決定された固定角度へ幻影2体を配置（イリュージョナー風の微小な揺らぎのみ維持）。
+- **吸引 (`pull`) / 反発 (`repulse`) の強化**: クールダウンを `18秒` から `9秒` に短縮し、水平ベクトル加算強度をノックバックII相当（`1.4`）へ引き上げ。
+- **侵食 (`corrosion`) の確率引き上げ**: 発動確率を `25%` から `30%` に引き上げ（`README.md`・言語ファイルも同期更新）。
+
+### English
+- **Fixed-Angle Illusion Decoys**: Replaced orbital rotation around the mob with deterministic entity-specific fixed angles and subtle Illusioner-like sway.
+- **Buffed Pull & Repulse**: Reduced cooldown from `18s` to `9s` and increased horizontal velocity impulse to Knockback II equivalent (`1.4`).
+- **Buffed Corrosion Chance**: Increased trigger chance on hit from `25%` to `30%` (updated `README.md` and localization files).
+
 ## [0.2.10-beta] - 2026-11-17
 
 ### 日本語

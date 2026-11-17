@@ -410,11 +410,11 @@ public final class HostilityEventHandler {
         if (target == null || !target.isAlive() || mob.distanceToSqr(target) > 32.0 * 32.0) {
             return;
         }
-        if (cap.hasTrait(TraitType.PULL) && gameTime - cap.lastPullTick >= 360L) {
+        if (cap.hasTrait(TraitType.PULL) && gameTime - cap.lastPullTick >= 180L) {
             cap.lastPullTick = gameTime;
             applyVectorImpulse(mob, target, true);
         }
-        if (cap.hasTrait(TraitType.REPULSE) && gameTime - cap.lastRepulseTick >= 360L) {
+        if (cap.hasTrait(TraitType.REPULSE) && gameTime - cap.lastRepulseTick >= 180L) {
             cap.lastRepulseTick = gameTime;
             applyVectorImpulse(mob, target, false);
         }
@@ -428,7 +428,7 @@ public final class HostilityEventHandler {
             return;
         }
         double horiz = Math.sqrt(horizSq);
-        double strength = 0.9; // Equivalent to Knockback I (0.4 base + 0.5 enchant) without KB resistance
+        double strength = 1.4; // Equivalent to Knockback II (0.4 base + 1.0 enchant) without KB resistance
         target.setDeltaMovement(target.getDeltaMovement().add(
                 (dx / horiz) * strength,
                 0.0,
@@ -700,7 +700,7 @@ public final class HostilityEventHandler {
             target.setSecondsOnFire(4);
         }
 
-        if (targetDebuff != null && snap.hasTrait(TraitType.CORROSION) && rand.nextFloat() < 0.25f) {
+        if (targetDebuff != null && snap.hasTrait(TraitType.CORROSION) && rand.nextFloat() < 0.30f) {
             targetDebuff.addCorrosionStack(target, gameTime);
         }
 

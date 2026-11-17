@@ -161,18 +161,21 @@ public final class ClientEvents {
             if (cap.hasTrait(TraitType.ILLUSION) && !entity.isInvisible()
                     && mc.player != null && entity.distanceToSqr(mc.player) <= 2304.0) {
                 float partialTick = event.getPartialTick();
-                double angle = (entity.tickCount + partialTick) * 0.08;
-                double dx = Math.cos(angle) * 1.8;
-                double dz = Math.sin(angle) * 1.8;
+                // Deterministic fixed angle per entity (no spinning around the body)
+                long seed = entity.getUUID().getLeastSignificantBits() ^ entity.getUUID().getMostSignificantBits();
+                double baseAngle = ((seed & 0xFFFFL) / 65536.0) * (Math.PI * 2.0);
+                double sway = 1.6 + Math.sin((entity.tickCount + partialTick) * 0.12) * 0.15;
                 float yaw = Mth.lerp(partialTick, entity.yRotO, entity.getYRot());
                 EntityRenderer<LivingEntity> renderer =
                         (EntityRenderer<LivingEntity>) mc.getEntityRenderDispatcher().getRenderer(entity);
                 renderingIllusion = true;
                 try {
                     for (int i = 0; i < 2; i++) {
-                        double sign = (i == 0) ? 1.0 : -1.0;
+                        double angle = baseAngle + (i == 0 ? 0.0 : Math.PI);
+                        double dx = Math.cos(angle) * sway;
+                        double dz = Math.sin(angle) * sway;
                         poseStack.pushPose();
-                        poseStack.translate(dx * sign, 0.0, dz * sign);
+                        poseStack.translate(dx, 0.0, dz);
                         renderer.render(entity, yaw, partialTick, poseStack, buffer, packedLight);
                         poseStack.popPose();
                     }

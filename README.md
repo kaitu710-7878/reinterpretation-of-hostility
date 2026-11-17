@@ -43,8 +43,8 @@ A Minecraft 1.20.1 (Forge) enemy-scaling mod reinterpreting **L2Hostility**. It 
 - **[120] 生命吸収 (Lifesteal)**: 攻撃ヒット時に自身の最大HPの0.5%を回復 / Heals 0.5% of max HP on hit.
 - **[120] 万能耐性 (Universal Resistance)**: 全ダメージ（無敵貫通を除く）を20%軽減 / Reduces all non-invul-bypass damage by 20%.
 - **[120] 活力 (Vitality)**: 最大HPが固定値+10かつ割合+10%増加（スポーン時に増加分まで全快） / Grants +10 flat and +10% Max HP (heals to full on spawn).
-- **[120] 吸引 (Pull)**: 18秒クールダウンで敵対対象を自身方向へノックバックI相当のベクトル加算（ノックバック耐性無効） / Every 18s, pulls the target toward the owner with Knockback I velocity (ignores KB resistance).
-- **[120] 反発 (Repulse)**: 18秒クールダウンで敵対対象を反対方向へノックバックI相当のベクトル加算（ノックバック耐性無効） / Every 18s, pushes the target away with Knockback I velocity (ignores KB resistance).
+- **[120] 吸引 (Pull)**: 9秒クールダウンで敵対対象を自身方向へノックバックII相当の水平ベクトル加算（ノックバック耐性無効） / Every 9s, pulls the target toward the owner with Knockback II horizontal velocity (ignores KB resistance).
+- **[120] 反発 (Repulse)**: 9秒クールダウンで敵対対象を反対方向へノックバックII相当の水平ベクトル加算（ノックバック耐性無効） / Every 9s, pushes the target away with Knockback II horizontal velocity (ignores KB resistance).
 - **[150] 復活 (Revive)**: 死亡時に1度だけレベル・特性を維持して全快復活 / Revives once upon death with full HP, keeping level and traits.
 - **[150] 学習 (Adaptation)**: 1種類のダメージに適応（被弾毎10%乗算軽減、下限50%） / Adapts to 1 damage type (0.9x per hit, floored at 0.5x).
 - **[150] 破壊 (Destruction)**: 攻撃時40%でバフ1つ解除、失敗時はバフ数×10%追加ダメージ / 40% chance on hit to strip 1 buff, or deal +10% damage per buff.
@@ -58,7 +58,7 @@ A Minecraft 1.20.1 (Forge) enemy-scaling mod reinterpreting **L2Hostility**. It 
 - **[180] 鼓舞 (Inspire)**: 20秒ごとにヴェックスを3体召喚。生存している召喚ヴェックス1体ごとに攻撃力・移動速度・防御力+5% / Summons 3 Vexes every 20s; +5% ATK/SPD/Armor per active summoned Vex.
 - **[200] 非現実特攻 (Unreality)**: 攻撃時40%で10秒間防具のランダムなエンチャントLv-1（重複可・下限0、ツールチップに赤字表示） / 40% chance on hit to reduce a random armor enchantment by 1 for 10s (stackable, floor 0).
 - **[200] 不死殺し (Anti-Revive)**: 攻撃時50%で中立効果「復活阻止」（8秒、不死のトーテム発動不可）付与 / 50% chance on hit to inflict Revive Prevention for 8s (blocks Totem of Undying).
-- **[250] 侵食 (Corrosion)**: 攻撃時25%で8秒間、防御力-1%・防具強度-0.5%を割合減算（独立重複） / 25% chance on hit to subtract 1% Armor & 0.5% Toughness for 8s (independent timers).
+- **[250] 侵食 (Corrosion)**: 攻撃時30%で8秒間、防御力-1%・防具強度-0.5%を割合減算（独立重複） / 30% chance on hit to subtract 1% Armor & 0.5% Toughness for 8s (independent timers).
 - **[300] 黙示録 (Apocalypse)**: 攻撃時30%で防具/Curios 1つのAttribute恩恵を5秒間-10%（ツールチップに動的表示） / 30% chance on hit to weaken 1 armor/Curios item's attributes by 10% for 5s.
 - **[300] 守護の印 (Guardian Seal)**: 敵対時40秒毎に発光ゾンビ3体召喚（レベル適用・特性なし・3倍デスポーン・スタック時即消滅）。生存中は被ダメージ75%軽減 / Every 40s in combat, summons 3 glowing level-scaled Zombies (no traits, fast despawn/discard on stuck); -75% damage taken while any live.
 - **[400] 奪取 (Plunder)**: 攻撃時25%で20秒間、最終最大HPを1%ずつ割合減算（独立タイマーで重複・死亡時リセット） / 25% chance on hit to subtract 1% of final max HP for 20s (independent timers, resets on death).
