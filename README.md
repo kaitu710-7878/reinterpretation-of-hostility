@@ -1,74 +1,108 @@
 # Reinterpretation of Hostility
 
-Minecraft 1.20.1 (Forge) 向けの敵強化MODです。**L2Hostility** をベースに、「理不尽さ」や他MOD依存（L2Complements）・救済アイテムを排し、**L2Library のみに依存**する再解釈版として設計されています。
+Minecraft 1.20.1 (Forge) 向けの敵強化MODです。**L2Hostility** をベースに、「理不尽さ」や他MOD依存（L2Complements）・救済アイテムを排し、**L2Library（および内蔵の L2DamageTracker / L2Tabs）のみに依存**する再解釈版として設計されています。
 
-A Minecraft 1.20.1 (Forge) enemy-scaling mod reinterpreting **L2Hostility**. It removes L2Complements dependencies, salvation items, and overly punishing mechanics, depending **only on L2Library**.
+A Minecraft 1.20.1 (Forge) enemy-scaling mod reinterpreting **L2Hostility**. It removes L2Complements dependencies, salvation items, and overly punishing mechanics, depending **only on L2Library (and its bundled L2DamageTracker / L2Tabs)**.
 
 ---
 
-## 特徴 / Features
+## システム仕様 / System Mechanics
 
-### 依存関係 / Dependencies
+### 1. 依存関係・任意互換 / Dependencies & Compatibility
 - **必須 / Required**: **Minecraft 1.20.1**, **Forge (47.4.0+)**, **L2Library (2.4.0+)**
 - **任意互換 / Optional Compatibility**:
-  - **Curios API**: 導入時、「黙示録」「封印」の対象に Curios スロットが含まれます / Included in Apocalypse and Seal targets when installed.
-  - **Jade**: モブのレベルと特性を Jade のオーバーレイに表示します / Displays mob level and traits in Jade HUD.
-  - **Neat** (https://www.curseforge.com/minecraft/mc-mods/neat): 頭上のレベル・特性表示が Neat の体力バーと重ならないよう位置を自動調整します / Automatically offsets overhead level/trait rendering to avoid overlapping Neat health bars.
+  - **Curios API**: 導入時、「黙示録」「封印」の対象スロットに Curios が含まれます / Included in Apocalypse and Seal target slots when installed.
+  - **Jade**: モブのレベルと特性を Jade のオーバーレイに表示します / Displays mob level and traits in the Jade HUD.
+  - **Neat** (https://www.curseforge.com/minecraft/mc-mods/neat): 頭上のレベル・特性表示が Neat の体力バーと重ならないよう表示位置を自動オフセットします / Automatically offsets overhead level/trait rendering to avoid overlapping Neat health bars.
 
-### 段階的アンロック（不可逆） / Irreversible Unlock
-- 初期状態では難易度・レベルシステムは停止しています。
-- インベントリ右上の「敵対度 / Hostility」タブから **「敵対の循環に踏み入る / Step into the Cycle of Hostility」** をクリックするか、**ネザーへ到達**することで稼働します。
-- The difficulty system starts dormant and is permanently activated by clicking **Step into the Cycle of Hostility** in the inventory's **Hostility** tab or by entering the **Nether**.
+### 2. 段階的アンロック（不可逆） / Irreversible Unlock
+- 初期状態では難易度・レベルシステムは停止しており、敵モブはレベル0・特性なしでスポーンします。
+- インベントリ画面の **L2Tabs「敵対度 / Hostility」タブ** を開き **「敵対の循環に踏み入る / Step into the Cycle of Hostility」** を押すか、**ネザーへ到達**すると、そのプレイヤーの難易度システムが永久に稼働します。
+- The hostility system starts dormant (mobs spawn at Lv.0 without traits) and permanently activates when the player clicks **Step into the Cycle of Hostility** in the **Hostility** inventory tab or enters the **Nether**.
 
-### 危険度とレベルスケーリング / Danger & Level Scaling
-- **危険度の上昇 / Danger Progression**: 危険度は**敵モブの討伐のみ**で上昇し、上昇ペースは本家の半分（倍緩やか：`killsPerLevel = 60`）です。計算負荷防止のため蓄積上限（`maxDangerCap = 2000.0`）があります。
-- **レベル算出 / Mob Level Calculation**: スポーン時のモブレベルは最寄りプレイヤーの危険度にランダム係数（`0.85〜1.15` ± 振れ幅）を掛けた相関値で決まります（ディメンションによるフラット加算はありません）。
-- **レベル上限と拡張 / Level Cap & Expansion**: 基本レベル上限は **600**。**エンド到達で +10**、**他MOD製ディメンション1種到達ごとに +5** 上限が拡張されます。
-- **特性の獲得条件 / Trait Acquisition**: 特性出現の最低レベル制限（Lv.90制限）はなく、モブのレベル（＝コスト予算）が特性コスト以上であれば即座に抽選・獲得されます（特性レベルの概念はなく、1体あたり最大8個まで）。
+### 3. 危険度上昇・レベル算出・ステータス補正 / Danger, Level Scaling & Stats
+- **危険度の上昇 / Danger Progression**:
+  - 危険度は**敵モブの討伐のみ**で上昇します（時間経過やディメンション移動による加算はありません）。
+  - 本家 L2Hostility と同じ経験値テーブル式を採用し、同レベルモブ討伐あたりの必要数 `killsPerLevel` を本家 (`30`) の倍緩やかな **`60`** に設定しています。
+  - 計算・描画負荷を防ぐため、蓄積危険度にはストッパー上限（`maxDangerCap = 2000.0`）を設けています。
+- **スポーンレベルの決定 / Spawn Level Calculation**:
+  - 最寄りのアンロック済みプレイヤーの危険度に対し、ランダム倍率（`0.85 〜 1.15`）およびランダム振れ幅（`±5`）を掛けて算出されます（ディメンションによるフラット加算なし）。
+  - **レベル上限 / Level Cap**: 基本上限 **`600`**。**エンド到達で `+10`**、**他MOD製ディメンション1種到達ごとに `+5`** 上限が拡張されます（現在の推定出現レベル範囲・上限はタブ画面で確認可能）。
+- **ステータス補正 / Attribute & Damage Scaling**:
+  - **最大HP**: `+3% / Lv` (`healthBonusPerLevel = 0.03`)
+  - **攻撃力**: `+2% / Lv` (`damageBonusPerLevel = 0.02`)
+  - 近接攻撃だけでなく、**スケルトンの弓矢・エヴォーカーの牙・エンダードラゴンのブレス/火球などの遠距離・間接・魔法攻撃**にもレベル倍率が正しく適用されます。
 
-### 36種類の特性（コスト順） / 36 Mob Traits (Ordered by Cost)
-- **[50] 修復力 (Regeneration)**: 8秒以上被ダメージなしで毎tick最大HPの0.1%回復 / Regenerates 0.1% max HP per tick after 8s out of combat.
-- **[50] 段差無視 (Step Up)**: どんな高さの段差でも減速せず即座に移動可能 / Steps up any block height without slowing down.
-- **[50] 毒撃 (Poison Strike)**: 攻撃時50%の確率で毒 Lv.1（6秒）付与 / 50% chance on hit to inflict Poison I for 6s.
-- **[50] 迅速 (Swift)**: 移動速度Attributeが+15%増加 / Increases Movement Speed by +15%.
-- **[50] 着火 (Ignite)**: 攻撃時45%の確率で4秒間引火させる / 45% chance on hit to set the target on fire for 4s.
-- **[50] 免疫 (Immunity)**: デバフ受領時50%でレベル-1（下限Lv.1）、30秒以上の効果時間を30秒に上書き / 50% chance to lower incoming debuff level by 1 (min Lv.1); caps duration at 30s.
-- **[50] エンダー (Ender)**: エンダーマン同様に飛び道具を無効化（回避・テレポートなし） / Nullifies projectiles like an Enderman without teleporting.
-- **[50] 幻影 (Illusion)**: イリュージョナー同様の見た目だけの幻影を2体表示（本体は透明化しない） / Displays 2 Illusioner-style visual decoys without turning invisible.
-- **[60] 鈍重 (Heavy)**: 移動速度-15%、ノックバック耐性+0.3、攻撃力+10% / Movement speed -15%, Knockback Resistance +0.3, Attack Damage +10%.
-- **[70] 衰弱 (Wither Strike)**: 攻撃時50%の確率でウィザー Lv.1（6秒）付与 / 50% chance on hit to inflict Wither I for 6s.
-- **[90] 怨嗟 (Resentment)**: 攻撃時40%の確率で「呪詛」Lv.1（8秒、回復量50%減少）付与 / 40% chance on hit to inflict Curse I for 8s (-50% healing).
-- **[100] 頑丈 (Sturdy)**: 防御力と防具強度が固定値+8かつ割合+10%増加 / Grants +8 flat and +10% Armor and Armor Toughness.
-- **[100] 反撃 (Counterattack)**: 被ダメージ時に3物理ダメージで反撃（CT6秒）。無敵時間中でも攻撃時特性のトリガー判定が発生 / Deals 3 physical damage on hit (6s CD) and triggers on-hit traits even during i-frames.
-- **[120] 生命吸収 (Lifesteal)**: 攻撃ヒット時に自身の最大HPの0.5%を回復 / Heals 0.5% of max HP on hit.
-- **[120] 万能耐性 (Universal Resistance)**: 全ダメージ（無敵貫通を除く）を20%軽減 / Reduces all non-invul-bypass damage by 20%.
-- **[120] 活力 (Vitality)**: 最大HPが固定値+10かつ割合+10%増加（スポーン時に増加分まで全快） / Grants +10 flat and +10% Max HP (heals to full on spawn).
-- **[120] 吸引 (Pull)**: 9秒クールダウンで敵対対象を自身方向へノックバックII相当の水平ベクトル加算（ノックバック耐性無効） / Every 9s, pulls the target toward the owner with Knockback II horizontal velocity (ignores KB resistance).
-- **[120] 反発 (Repulse)**: 9秒クールダウンで敵対対象を反対方向へノックバックII相当の水平ベクトル加算（ノックバック耐性無効） / Every 9s, pushes the target away with Knockback II horizontal velocity (ignores KB resistance).
-- **[150] 復活 (Revive)**: 死亡時に1度だけレベル・特性を維持して全快復活 / Revives once upon death with full HP, keeping level and traits.
-- **[150] 学習 (Adaptation)**: 1種類のダメージに適応（被弾毎10%乗算軽減、下限50%） / Adapts to 1 damage type (0.9x per hit, floored at 0.5x).
-- **[150] 破壊 (Destruction)**: 攻撃時40%でバフ1つ解除、失敗時はバフ数×10%追加ダメージ / 40% chance on hit to strip 1 buff, or deal +10% damage per buff.
-- **[150] 強固 (Fortitude)**: 近接物理ダメージを70%軽減 / Reduces melee physical damage by 70%.
-- **[150] 加護 (Protection)**: 魔法ダメージ（バニラ魔法タグ / `forge:is_magic`）を70%軽減 / Reduces magic damage (vanilla tags / `forge:is_magic`) by 70%.
-- **[150] 狂戦士 (Berserker)**: HP50%未満で攻撃力+10%、攻撃速度+0.1、射程+1、毎秒0.1%再生（被弾後3秒停止） / Below 50% HP: +10% ATK, +0.1 ATK SPD, +1 reach, 0.1%/s regen (paused 3s on hit).
-- **[150] 装甲貫通 (Armor Pierce)**: 攻撃の5%が物理防御貫通ダメージに変換 / Converts 5% of attack damage to armor-piercing damage.
-- **[150] 加護貫通 (Protection Pierce)**: 攻撃の5%がエンチャント・エフェクト貫通ダメージ（物理防御は適用）に変換 / Converts 5% of attack damage to enchantment/effect-piercing damage (armor still applies).
-- **[170] 精神撹乱 (Mental Disruption)**: 攻撃時40%で8秒間、L2魔法攻撃力 (`l2damagetracker:magic_damage`) に-1.5%割合減算（独立重複） / 40% chance on hit to subtract 1.5% L2 Magic Damage for 8s (independent timers).
-- **[170] 麻痺 (Paralysis)**: 攻撃時35%で8秒間、近接攻撃力 (`generic.attack_damage`) に-1%割合減算（独立重複） / 35% chance on hit to subtract 1% Attack Damage for 8s (independent timers).
-- **[180] 鼓舞 (Inspire)**: 20秒ごとにヴェックスを3体召喚。生存している召喚ヴェックス1体ごとに攻撃力・移動速度・防御力+5% / Summons 3 Vexes every 20s; +5% ATK/SPD/Armor per active summoned Vex.
-- **[200] 非現実特攻 (Unreality)**: 攻撃時40%で10秒間防具のランダムなエンチャントLv-1（重複可・下限0、ツールチップに赤字表示） / 40% chance on hit to reduce a random armor enchantment by 1 for 10s (stackable, floor 0).
-- **[200] 不死殺し (Anti-Revive)**: 攻撃時50%で中立効果「復活阻止」（8秒、不死のトーテム発動不可）付与 / 50% chance on hit to inflict Revive Prevention for 8s (blocks Totem of Undying).
-- **[250] 侵食 (Corrosion)**: 攻撃時30%で8秒間、防御力-1%・防具強度-0.5%を割合減算（独立重複） / 30% chance on hit to subtract 1% Armor & 0.5% Toughness for 8s (independent timers).
-- **[300] 黙示録 (Apocalypse)**: 攻撃時30%で防具/Curios 1つのAttribute恩恵を5秒間-10%（ツールチップに動的表示） / 30% chance on hit to weaken 1 armor/Curios item's attributes by 10% for 5s.
-- **[300] 守護の印 (Guardian Seal)**: 敵対時40秒毎に発光ゾンビ3体召喚（レベル適用・特性なし・3倍デスポーン・スタック時即消滅）。生存中は被ダメージ75%軽減 / Every 40s in combat, summons 3 glowing level-scaled Zombies (no traits, fast despawn/discard on stuck); -75% damage taken while any live.
-- **[400] 奪取 (Plunder)**: 攻撃時25%で20秒間、最終最大HPを1%ずつ割合減算（独立タイマーで重複・死亡時リセット） / 25% chance on hit to subtract 1% of final max HP for 20s (independent timers, resets on death).
-- **[550] 封印 (Seal)**: 攻撃ヒット時10%で防具/Curiosからランダムに1つを5tick封印（装備恩恵をすべて無効化し自動で解除） / 10% chance on hit to seal 1 random armor/Curios item for 5 ticks.
+### 4. 特性の抽選と状態異常・UI / Trait Rolling, Effects & UI
+- **特性の出現条件 / Trait Acquisition**: 最低レベル制限（Lv.90制限）はなく、モブのレベル（＝コスト予算）が特性コスト以上であれば即座に獲得可能です。特性レベルの概念はなく、1体あたり最大8個までコスト・重みに基づき抽選されます。
+- **状態異常 / Custom Status Effects**:
+  - **呪詛 (`rohostility:curse`)**: 悪性効果。効果中はあらゆる回復量が **50% 減少**します。
+  - **復活阻止 (`rohostility:revive_prevention`)**: 中立効果。効果中は **不死のトーテムが発動できなくなります**。
+- **視認性 / Visuals & Tooltips**:
+  - **頭上表示**: 視界内の敵モブ（32ブロック以内）の頭上にレベルと特性名を表示します（L2Tabs 画面では各特性にカーソルを合わせて詳細説明を確認でき、自動改行＆スクロールに対応しています）。
+  - **非現実特攻 / 黙示録ツールチップ**: 弱体化中の防具・Curios には赤字で低下後のエンチャントレベル (`元のLv-低下Lv (残り秒数)`) や `-10%` 後の動的 Attribute 値が表示されます。
 
-### コマンド & デバッグツール / Commands & Debug Tools
-- `/rohostility danger set <targets> <value>` / `add <targets> <delta>`: プレイヤーの危険度を設定・増減します。
-- `/rohostility trait add <targets> <trait>`: 指定モブに特性を付与します。
-- `/rohostility unlock <targets>`: 敵対システムを強制解放します。
-- **デバッグ用モブ編集ツール (`rohostility:debug_mob_editor`)**: GUIからレベルと特性を指定し、敵モブを右クリックするとその内容で上書きリスポーンさせます。
+---
+
+## 36種類の特性一覧（コスト順） / All 36 Mob Traits (Ordered by Cost)
+
+### コスト 50 / Cost 50
+- **修復力 (`regeneration`)**: 8秒（160 tick）以上ダメージを受けないと、毎 tick 最大HPの `0.1%` を回復します。 / Regenerates `0.1%` max HP per tick after 8s without taking damage.
+- **段差無視 (`step_up`)**: どれだけ高いブロックの段差でも減速せず、ハーフブロックのように即座に登ることができます。 / Steps up any block height instantly without slowing down.
+- **毒撃 (`poison_strike`)**: 攻撃ヒット時 `50%` の確率で「毒 Lv.1」を6秒間付与します。 / `50%` chance on hit to inflict Poison I for 6s.
+- **迅速 (`swift`)**: 移動速度 Attribute に `+15%`（`MULTIPLY_TOTAL`）の補正を得ます。 / Increases Movement Speed by `+15%`.
+- **着火 (`ignite`)**: 攻撃ヒット時 `45%` の確率で対象を4秒間引火させます。 / `45%` chance on hit to set the target on fire for 4s.
+- **免疫 (`immunity`)**: デバフを受ける際、`50%` の確率でエフェクトレベルを1下げます（Lv.1 未満にはなりません）。また、30秒以上のデバフを受けると効果時間を30秒に上書きします。 / `50%` chance to reduce incoming debuff level by 1 (min Lv.1); caps debuff duration at 30s.
+- **エンダー (`ender`)**: エンダーマンと同様に矢などの飛び道具（`IS_PROJECTILE`）を無効化します（回避やテレポートは行いません）。 / Nullifies projectiles like an Enderman without dodging or teleporting.
+- **幻影 (`illusion`)**: バニラのイリュージョナーと同様の見た目だけの幻影を2体表示します（本体は透明化せず、各幻影は独立した位置へ周期的に移動・揺らぎます）。 / Displays 2 Illusioner-style visual decoys at independent shifting offsets without turning invisible.
+
+### コスト 60〜90 / Cost 60 - 90
+- **[60] 鈍重 (`heavy`)**: 移動速度 `-15%`、ノックバック耐性 `+0.3`、攻撃力 `+10%` を得ます。 / Movement speed `-15%`, Knockback Resistance `+0.3`, Attack Damage `+10%`.
+- **[70] 衰弱 (`weakness_strike`)**: 攻撃ヒット時 `50%` の確率で「ウィザー（衰弱） Lv.1」を6秒間付与します。 / `50%` chance on hit to inflict Wither I for 6s.
+- **[90] 怨嗟 (`resentment`)**: 攻撃ヒット時 `40%` の確率で「呪詛 Lv.1」（8秒間、回復量50%減少）を付与します。 / `40%` chance on hit to inflict Curse I for 8s (`-50%` healing).
+
+### コスト 100〜120 / Cost 100 - 120
+- **[100] 頑丈 (`sturdy`)**: 防御力と防具強度をそれぞれ固定値 `+8` かつ割合 `+10%` 増加させます。 / Grants `+8` flat and `+10%` Armor and Armor Toughness.
+- **[100] 反撃 (`counterattack`)**: ダメージを受けたとき攻撃者へ `3` 物理ダメージを与えます（クールダウン6秒）。この反撃は無敵時間中でも攻撃時確率特性のトリガー判定を発生させます。 / Deals `3` physical damage to attackers when hit (6s CD); triggers on-hit traits even during i-frames.
+- **[120] 生命吸収 (`lifesteal`)**: 攻撃ヒット時、自身の最大HPの `0.5%` を回復します。 / Heals `0.5%` of own max HP on hit.
+- **[120] 万能耐性 (`universal_resistance`)**: 無敵貫通を除くあらゆる被ダメージを `20%` 軽減します。 / Reduces all non-invul-bypass incoming damage by `20%`.
+- **[120] 活力 (`vitality`)**: 最大HPを固定値 `+10` かつ割合 `+10%` 増加させ、スポーン時に引き上がった最大HPまで回復します。 / Grants `+10` flat and `+10%` Max HP and heals to full on spawn.
+- **[120] 吸引 (`pull`)**: 9秒クールダウンで敵対対象を特性所有者の方向へ、ノックバックII相当（強度 `1.4`）の水平ベクトル加算で引き寄せます（ノックバック耐性で軽減不可）。 / Every 9s, pulls the target horizontally toward the owner with Knockback II velocity (`1.4`), ignoring knockback resistance.
+- **[120] 反発 (`repulse`)**: 9秒クールダウンで敵対対象を特性所有者の反対方向へ、ノックバックII相当（強度 `1.4`）の水平ベクトル加算で弾き飛ばします（ノックバック耐性で軽減不可）。 / Every 9s, pushes the target horizontally away with Knockback II velocity (`1.4`), ignoring knockback resistance.
+
+### コスト 150 / Cost 150
+- **復活 (`revive`)**: 死亡時に1度だけ、レベルと特性を維持したまま最大HPで復活します。 / Revives once upon death with full HP, retaining level and traits.
+- **学習 (`adaptation`)**: 最初に受けた1種類のダメージタイプのみを記憶し、同種ダメージを受けるごとに `0.9` 倍（10%ずつ乗算軽減、下限 `50%`）に軽減します。 / Adapts to 1 damage type, multiplying damage by `0.9x` per hit (floored at `50%`).
+- **破壊 (`destruction`)**: 攻撃時 `40%` の確率で対象の有益バフを1つ解除し、解除しなかった場合は対象の有益バフ数 × `10%` の追加ダメージを与えます。 / `40%` chance on hit to strip 1 beneficial effect; otherwise deals `+10%` damage per buff.
+- **強固 (`fortitude`)**: 近接物理ダメージを `70%` 軽減します。 / Reduces melee physical damage by `70%`.
+- **加護 (`protection`)**: 魔法ダメージ（バニラ魔法タグおよび `forge:is_magic`）を `70%` 軽減します。 / Reduces magic damage (vanilla tags and `forge:is_magic`) by `70%`.
+- **狂戦士 (`berserker`)**: HPが50%未満になると攻撃力 `+10%`、攻撃速度 `+0.1`、射程 `+1`、毎秒 `0.1%` 再生（被ダメージ後3秒間停止）を得ます。 / Below `50%` HP: `+10%` ATK, `+0.1` ATK SPD, `+1` reach, and `0.1%/s` regen (paused 3s after taking damage).
+- **装甲貫通 (`armor_pierce`)**: 攻撃の `5%` が物理防御貫通ダメージとして別枠で与えられます。 / Converts `5%` of attack damage into armor-piercing damage.
+- **加護貫通 (`protection_pierce`)**: 攻撃の `5%` がエンチャント・ポーション等の耐性貫通ダメージとして与えられます（物理防御による軽減は適用）。 / Converts `5%` of attack damage into enchantment/effect-piercing damage (armor still applies).
+
+### コスト 170〜250 / Cost 170 - 250
+- **[170] 精神撹乱 (`mental_disruption`)**: 攻撃時 `40%` の確率で8秒間、対象の `l2damagetracker:magic_damage` Attribute に `-1.5%` の割合減算を加えます（奪取と同じ独立タイマー重複・死亡時リセット）。 / `40%` chance on hit to subtract `1.5%` from `l2damagetracker:magic_damage` for 8s (independent timers, resets on death).
+- **[170] 麻痺 (`paralysis`)**: 攻撃時 `35%` の確率で8秒間、対象の `generic.attack_damage` Attribute に `-1%` の割合減算を加えます（奪取と同じ独立タイマー重複・死亡時リセット）。 / `35%` chance on hit to subtract `1%` from `generic.attack_damage` for 8s (independent timers, resets on death).
+- **[180] 鼓舞 (`inspire`)**: 戦闘中20秒ごとにヴェックスを3体召喚し、生存している召喚ヴェックス1体ごとに自身の攻撃力・移動速度・防御力を `+5%` 上昇させます。 / Summons 3 Vexes every 20s in combat; gains `+5%` ATK, Speed, and Armor per active summoned Vex.
+- **[200] 非現実特攻 (`unreality`)**: 攻撃時 `40%` の確率で10秒間、対象防具のランダムなエンチャントレベルを1低下させます（重複可・下限0）。 / `40%` chance on hit to reduce a random armor enchantment level by 1 for 10s (stackable, floor 0).
+- **[200] 不死殺し (`anti_revive`)**: 攻撃時 `50%` の確率で中立エフェクト「復活阻止」（8秒間、不死のトーテム発動不可）を付与します。 / `50%` chance on hit to inflict Revive Prevention for 8s (blocks Totem of Undying).
+- **[250] 侵食 (`corrosion`)**: 攻撃時 `30%` の確率で8秒間、対象の防御力に `-1%`・防具強度に `-0.5%` の割合減算を加えます（奪取と同じ独立タイマー重複・死亡時リセット）。 / `30%` chance on hit to subtract `1%` Armor and `0.5%` Toughness for 8s (independent timers, resets on death).
+
+### コスト 300〜550 / Cost 300 - 550
+- **[300] 黙示録 (`apocalypse`)**: 攻撃時 `30%` の確率で防具/Curios の中から1つの Attribute 恩恵を5秒間 `-10%` 弱体化します。 / `30%` chance on hit to weaken 1 armor/Curios item's attributes by `10%` for 5s.
+- **[300] 守護の印 (`guardian_seal`)**: 敵対時40秒のクールダウンで、常時発光・特性所有者のレベル適用・特性なしのゾンビを3体召喚します。召喚ゾンビが1体でも生存している間、特性所有者の受けるダメージを `75%` 軽減します。ゾンビは窒息・32ブロック離脱・敵対対象喪失・停止（スタック）時に即座に消滅し、通常より3倍デスポーンしやすい仕様です。 / Every 40s in combat, summons 3 glowing level-scaled traitless Zombies; reduces damage taken by `75%` while any live. Zombies discard immediately on suffocation, >32m distance, lost target, or getting stuck, and despawn 3x faster.
+- **[400] 奪取 (`plunder`)**: 攻撃時 `25%` の確率で20秒間、対象の最終最大HPを `1%` ずつ割合減算します（独立タイマーで重複・バフアイコンなし・死亡時リセット）。 / `25%` chance on hit to subtract `1%` of final max HP for 20s (independent timers, no HUD icon, resets on death).
+- **[550] 封印 (`seal`)**: 攻撃ヒット時 `10%` の確率で防具/Curios からランダムに1つを 5 tick 間「封印されたアイテム」に置き換え、Attribute 以外の特殊恩恵も含めて一時停止させます（自動解除）。 / `10%` chance on hit to seal 1 random armor/Curios item for 5 ticks, disabling all passive benefits until auto-restored.
+
+---
+
+## コマンド & デバッグツール / Commands & Debug Tools
+- `/rohostility danger set <targets> <value>` / `add <targets> <delta>`: プレイヤーの蓄積危険度を設定・増減します。
+- `/rohostility trait add <targets> <trait>`: 指定モブへ特性を付与します。
+- `/rohostility unlock <targets>`: 対象プレイヤーの敵対システムをアンロックします。
+- **デバッグ用モブ編集ツール (`rohostility:debug_mob_editor`)**:
+  - 右クリックでスクロール対応の専用GUIを開き、目標レベルと特性セットを保存できます。
+  - 敵モブに対して右クリックすると、指定したレベル・特性に上書きした状態でリスポーン（他MODのスポーン補正含む再計算）させます。
 
 ---
 

@@ -1,5 +1,13 @@
 # Changelog / 変更履歴
 
+## [0.2.13-beta] - 2026-11-17
+
+### 日本語
+- **README.md の詳細化・最新化**: 危険度経験値・レベル算出・遠距離/間接魔法補正・特性抽選・状態異常・コマンド＆デバッグツールの仕様と、全36種類の特性の具体的な効果・数値を日英両言語で詳しく記載。
+
+### English
+- **Expanded README.md Documentation**: Added detailed explanations of danger/level mechanics, indirect/ranged/magic scaling, trait rolling, status effects, commands, debug tools, and exact mechanics for all 36 traits in both Japanese and English.
+
 ## [0.2.12-beta] - 2026-11-17
 
 ### 日本語
