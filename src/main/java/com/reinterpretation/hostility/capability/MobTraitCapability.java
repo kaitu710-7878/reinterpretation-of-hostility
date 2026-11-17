@@ -68,6 +68,30 @@ public class MobTraitCapability extends GeneralCapabilityTemplate<LivingEntity, 
     @SerialField
     public boolean inspireSummoned = false;
 
+    @SerialField
+    public long lastPullTick = -1000L;
+
+    @SerialField
+    public long lastRepulseTick = -1000L;
+
+    @SerialField
+    public long lastGuardianTick = -1000L;
+
+    @SerialField
+    public ArrayList<String> guardianZombieUuids = new ArrayList<>();
+
+    @SerialField
+    public boolean isGuardianZombie = false;
+
+    @SerialField
+    public String guardianOwnerUuid = "";
+
+    public double lastGuardianX = 0.0;
+    public double lastGuardianY = 0.0;
+    public double lastGuardianZ = 0.0;
+    public int guardianStuckCounter = 0;
+    public int guardianLastCheckTick = 0;
+
     public static boolean isHostileCandidate(LivingEntity entity) {
         return entity instanceof Mob && entity instanceof Enemy;
     }

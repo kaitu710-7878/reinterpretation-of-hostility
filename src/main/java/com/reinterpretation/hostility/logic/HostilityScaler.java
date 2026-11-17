@@ -44,6 +44,14 @@ public final class HostilityScaler {
             UUID.fromString("7a1c4b20-1122-4334-9556-88aabbcc0008");
     private static final UUID VITALITY_HEALTH_MULT_UUID =
             UUID.fromString("7a1c4b20-1122-4334-9556-88aabbcc0009");
+    private static final UUID SWIFT_SPEED_UUID =
+            UUID.fromString("7a1c4b20-1122-4334-9556-88aabbcc000a");
+    private static final UUID HEAVY_SPEED_UUID =
+            UUID.fromString("7a1c4b20-1122-4334-9556-88aabbcc000b");
+    private static final UUID HEAVY_KB_RES_UUID =
+            UUID.fromString("7a1c4b20-1122-4334-9556-88aabbcc000c");
+    private static final UUID HEAVY_DMG_UUID =
+            UUID.fromString("7a1c4b20-4334-1122-9556-88aabbcc000d");
 
     private HostilityScaler() {
     }
@@ -62,6 +70,10 @@ public final class HostilityScaler {
 
         if (cap.inspireSummoned) {
             cap.level = 0;
+            return;
+        }
+
+        if (cap.isGuardianZombie) {
             return;
         }
 
@@ -130,6 +142,18 @@ public final class HostilityScaler {
             addPermanentModifier(entity, Attributes.MAX_HEALTH, VITALITY_HEALTH_MULT_UUID,
                     "rohostility_vitality_health_mult", 0.10, AttributeModifier.Operation.MULTIPLY_TOTAL);
             entity.setHealth(entity.getMaxHealth());
+        }
+        if (cap.hasTrait(TraitType.SWIFT)) {
+            addPermanentModifier(entity, Attributes.MOVEMENT_SPEED, SWIFT_SPEED_UUID,
+                    "rohostility_swift_speed", 0.15, AttributeModifier.Operation.MULTIPLY_TOTAL);
+        }
+        if (cap.hasTrait(TraitType.HEAVY)) {
+            addPermanentModifier(entity, Attributes.MOVEMENT_SPEED, HEAVY_SPEED_UUID,
+                    "rohostility_heavy_speed", -0.15, AttributeModifier.Operation.MULTIPLY_TOTAL);
+            addPermanentModifier(entity, Attributes.KNOCKBACK_RESISTANCE, HEAVY_KB_RES_UUID,
+                    "rohostility_heavy_kb_res", 0.30, AttributeModifier.Operation.ADDITION);
+            addPermanentModifier(entity, Attributes.ATTACK_DAMAGE, HEAVY_DMG_UUID,
+                    "rohostility_heavy_dmg", 0.10, AttributeModifier.Operation.MULTIPLY_TOTAL);
         }
     }
 

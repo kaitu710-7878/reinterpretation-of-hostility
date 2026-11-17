@@ -15,9 +15,11 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.client.renderer.entity.EntityRenderer;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.util.Mth;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.Attribute;
@@ -61,6 +63,8 @@ public final class ClientEvents {
 
     @Mod.EventBusSubscriber(modid = ReinterpretationOfHostility.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE, value = Dist.CLIENT)
     public static final class ForgeBusEvents {
+
+        private static boolean renderingIllusion = false;
 
         @SubscribeEvent
         public static void onItemTooltip(ItemTooltipEvent event) {
@@ -138,17 +142,49 @@ public final class ClientEvents {
         }
 
         @SubscribeEvent
+        @SuppressWarnings("unchecked")
         public static void onRenderLiving(RenderLivingEvent.Post<?, ?> event) {
-            if (!ModConfig.COMMON.showMobOverheadInfo.get()) {
+            if (renderingIllusion) {
                 return;
             }
             LivingEntity entity = event.getEntity();
             MobTraitCapability cap = MobTraitCapability.getOrNull(entity);
-            if (cap == null || !cap.initialized || cap.level <= 0) {
+            if (cap == null || !cap.initialized) {
                 return;
             }
 
             Minecraft mc = Minecraft.getInstance();
+            PoseStack poseStack = event.getPoseStack();
+            MultiBufferSource buffer = event.getMultiBufferSource();
+            int packedLight = event.getPackedLight();
+
+            if (cap.hasTrait(TraitType.ILLUSION) && !entity.isInvisible()
+                    && mc.player != null && entity.distanceToSqr(mc.player) <= 2304.0) {
+                float partialTick = event.getPartialTick();
+                double angle = (entity.tickCount + partialTick) * 0.08;
+                double dx = Math.cos(angle) * 1.8;
+                double dz = Math.sin(angle) * 1.8;
+                float yaw = Mth.lerp(partialTick, entity.yRotO, entity.getYRot());
+                EntityRenderer<LivingEntity> renderer =
+                        (EntityRenderer<LivingEntity>) mc.getEntityRenderDispatcher().getRenderer(entity);
+                renderingIllusion = true;
+                try {
+                    for (int i = 0; i < 2; i++) {
+                        double sign = (i == 0) ? 1.0 : -1.0;
+                        poseStack.pushPose();
+                        poseStack.translate(dx * sign, 0.0, dz * sign);
+                        renderer.render(entity, yaw, partialTick, poseStack, buffer, packedLight);
+                        poseStack.popPose();
+                    }
+                } finally {
+                    renderingIllusion = false;
+                }
+            }
+
+            if (!ModConfig.COMMON.showMobOverheadInfo.get() || cap.level <= 0) {
+                return;
+            }
+
             if (mc.player == null || entity.distanceToSqr(mc.player) > 1024.0) {
                 return;
             }
@@ -158,10 +194,6 @@ public final class ClientEvents {
             if (!mc.player.hasLineOfSight(entity)) {
                 return;
             }
-
-            PoseStack poseStack = event.getPoseStack();
-            MultiBufferSource buffer = event.getMultiBufferSource();
-            int packedLight = event.getPackedLight();
 
             poseStack.pushPose();
             float height = entity.getBbHeight() + 0.65f + (NEAT_LOADED ? 0.55f : 0.0f);

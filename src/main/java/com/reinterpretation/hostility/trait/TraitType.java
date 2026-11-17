@@ -29,7 +29,19 @@ public enum TraitType {
     INSPIRE("inspire", 180, 55, 0x44DDDD),
     POISON_STRIKE("poison_strike", 50, 95, 0x55BB33),
     WEAKNESS_STRIKE("weakness_strike", 70, 85, 0x666677),
-    RESENTMENT("resentment", 90, 80, 0x881166);
+    RESENTMENT("resentment", 90, 80, 0x881166),
+    SWIFT("swift", 50, 90, 0x66EEFF),
+    IGNITE("ignite", 50, 90, 0xFF5500),
+    PULL("pull", 120, 60, 0x4477FF),
+    REPULSE("repulse", 120, 60, 0xFF8844),
+    HEAVY("heavy", 60, 85, 0x555566),
+    IMMUNITY("immunity", 50, 85, 0xAAFFAA),
+    CORROSION("corrosion", 250, 45, 0x779922),
+    MENTAL_DISRUPTION("mental_disruption", 170, 55, 0xBB55FF),
+    PARALYSIS("paralysis", 170, 55, 0xEEEE44),
+    ENDER("ender", 50, 80, 0x9933CC),
+    ILLUSION("illusion", 50, 75, 0x88AAFF),
+    GUARDIAN_SEAL("guardian_seal", 300, 35, 0xFFD044);
 
     private final String id;
     private final int defaultCost;

@@ -21,6 +21,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.common.capabilities.CapabilityManager;
 import net.minecraftforge.common.capabilities.CapabilityToken;
+import net.minecraftforge.registries.ForgeRegistries;
 
 import java.util.*;
 
@@ -42,6 +43,16 @@ public class EntityDebuffCapability extends GeneralCapabilityTemplate<LivingEnti
 
     private static final UUID PLUNDER_MODIFIER_UUID =
             UUID.fromString("9e2f8a10-4b2c-4d3e-9a11-71f0e3a20101");
+    private static final UUID CORROSION_ARMOR_UUID =
+            UUID.fromString("9e2f8a10-4b2c-4d3e-9a11-71f0e3a20102");
+    private static final UUID CORROSION_TOUGH_UUID =
+            UUID.fromString("9e2f8a10-4b2c-4d3e-9a11-71f0e3a20103");
+    private static final UUID MENTAL_DISRUPTION_UUID =
+            UUID.fromString("9e2f8a10-4b2c-4d3e-9a11-71f0e3a20104");
+    private static final UUID PARALYSIS_UUID =
+            UUID.fromString("9e2f8a10-4b2c-4d3e-9a11-71f0e3a20105");
+    private static final ResourceLocation L2DT_MAGIC_DAMAGE_ID =
+            new ResourceLocation("l2damagetracker", "magic_damage");
     private static final UUID APOCALYPSE_ADD_UUID =
             UUID.fromString("9e2f8a10-4b2c-4d3e-9a11-71f0e3a20201");
     private static final UUID APOCALYPSE_MULT_BASE_UUID =
@@ -51,6 +62,15 @@ public class EntityDebuffCapability extends GeneralCapabilityTemplate<LivingEnti
 
     @SerialField
     public ArrayList<Long> plunderExpireTicks = new ArrayList<>();
+
+    @SerialField
+    public ArrayList<Long> corrosionExpireTicks = new ArrayList<>();
+
+    @SerialField
+    public ArrayList<Long> mentalDisruptionExpireTicks = new ArrayList<>();
+
+    @SerialField
+    public ArrayList<Long> paralysisExpireTicks = new ArrayList<>();
 
     @SerialField
     public HashMap<String, Long> apocalypseSlots = new HashMap<>();
@@ -75,6 +95,30 @@ public class EntityDebuffCapability extends GeneralCapabilityTemplate<LivingEnti
     public void addPlunderStack(LivingEntity entity, long gameTime) {
         plunderExpireTicks.add(gameTime + 400L); // 20 seconds
         updatePlunderModifier(entity);
+    }
+
+    public void addCorrosionStack(LivingEntity entity, long gameTime) {
+        corrosionExpireTicks.add(gameTime + 160L); // 8 seconds
+        updateCorrosionModifiers(entity);
+    }
+
+    public void addMentalDisruptionStack(LivingEntity entity, long gameTime) {
+        mentalDisruptionExpireTicks.add(gameTime + 160L); // 8 seconds
+        updateMentalDisruptionModifier(entity);
+    }
+
+    public void addParalysisStack(LivingEntity entity, long gameTime) {
+        paralysisExpireTicks.add(gameTime + 160L); // 8 seconds
+        updateParalysisModifier(entity);
+    }
+
+    public boolean hasL2MagicDamageAttribute() {
+        return ForgeRegistries.ATTRIBUTES.getValue(L2DT_MAGIC_DAMAGE_ID) != null;
+    }
+
+    public double getMentalDisruptionFallbackMultiplier() {
+        int count = mentalDisruptionExpireTicks.size();
+        return count <= 0 ? 1.0 : Math.max(0.01, 1.0 - 0.015 * count);
     }
 
     public void clearPlunder(LivingEntity entity) {
@@ -197,8 +241,14 @@ public class EntityDebuffCapability extends GeneralCapabilityTemplate<LivingEnti
 
     public void clearAll(LivingEntity entity) {
         plunderExpireTicks.clear();
+        corrosionExpireTicks.clear();
+        mentalDisruptionExpireTicks.clear();
+        paralysisExpireTicks.clear();
         apocalypseSlots.clear();
         updatePlunderModifier(entity);
+        updateCorrosionModifiers(entity);
+        updateMentalDisruptionModifier(entity);
+        updateParalysisModifier(entity);
         updateApocalypseModifiers(entity);
         restoreSealedItems(entity, 0L, true);
     }
@@ -212,11 +262,17 @@ public class EntityDebuffCapability extends GeneralCapabilityTemplate<LivingEnti
         restoreSealedItems(entity, gameTime, false);
         cleanupExpiredApocalypseTags(entity, gameTime);
 
-        if (!plunderExpireTicks.isEmpty()) {
-            boolean removed = plunderExpireTicks.removeIf(expire -> gameTime >= expire);
-            if (removed) {
-                updatePlunderModifier(entity);
-            }
+        if (!plunderExpireTicks.isEmpty() && plunderExpireTicks.removeIf(expire -> gameTime >= expire)) {
+            updatePlunderModifier(entity);
+        }
+        if (!corrosionExpireTicks.isEmpty() && corrosionExpireTicks.removeIf(expire -> gameTime >= expire)) {
+            updateCorrosionModifiers(entity);
+        }
+        if (!mentalDisruptionExpireTicks.isEmpty() && mentalDisruptionExpireTicks.removeIf(expire -> gameTime >= expire)) {
+            updateMentalDisruptionModifier(entity);
+        }
+        if (!paralysisExpireTicks.isEmpty() && paralysisExpireTicks.removeIf(expire -> gameTime >= expire)) {
+            updateParalysisModifier(entity);
         }
 
         if (!apocalypseSlots.isEmpty()) {
@@ -227,25 +283,49 @@ public class EntityDebuffCapability extends GeneralCapabilityTemplate<LivingEnti
         }
     }
 
-    private void updatePlunderModifier(LivingEntity entity) {
-        AttributeInstance instance = entity.getAttribute(Attributes.MAX_HEALTH);
+    private static void applyPercentageDebuffModifier(LivingEntity entity, Attribute attr, UUID uuid,
+                                                      String name, int count, double perStack) {
+        if (attr == null) {
+            return;
+        }
+        AttributeInstance instance = entity.getAttribute(attr);
         if (instance == null) {
             return;
         }
-        instance.removeModifier(PLUNDER_MODIFIER_UUID);
-        int count = plunderExpireTicks.size();
+        instance.removeModifier(uuid);
         if (count > 0) {
-            double factor = Math.max(-0.99, -0.01 * count);
+            double factor = Math.max(-0.99, -perStack * count);
             instance.addTransientModifier(new AttributeModifier(
-                    PLUNDER_MODIFIER_UUID,
-                    "rohostility_plunder",
-                    factor,
-                    AttributeModifier.Operation.MULTIPLY_TOTAL
+                    uuid, name, factor, AttributeModifier.Operation.MULTIPLY_TOTAL
             ));
-            if (entity.getHealth() > entity.getMaxHealth()) {
-                entity.setHealth(entity.getMaxHealth());
-            }
         }
+    }
+
+    private void updatePlunderModifier(LivingEntity entity) {
+        applyPercentageDebuffModifier(entity, Attributes.MAX_HEALTH, PLUNDER_MODIFIER_UUID,
+                "rohostility_plunder", plunderExpireTicks.size(), 0.01);
+        if (entity.getHealth() > entity.getMaxHealth()) {
+            entity.setHealth(entity.getMaxHealth());
+        }
+    }
+
+    private void updateCorrosionModifiers(LivingEntity entity) {
+        int count = corrosionExpireTicks.size();
+        applyPercentageDebuffModifier(entity, Attributes.ARMOR, CORROSION_ARMOR_UUID,
+                "rohostility_corrosion_armor", count, 0.01);
+        applyPercentageDebuffModifier(entity, Attributes.ARMOR_TOUGHNESS, CORROSION_TOUGH_UUID,
+                "rohostility_corrosion_tough", count, 0.005);
+    }
+
+    private void updateMentalDisruptionModifier(LivingEntity entity) {
+        Attribute magicAttr = ForgeRegistries.ATTRIBUTES.getValue(L2DT_MAGIC_DAMAGE_ID);
+        applyPercentageDebuffModifier(entity, magicAttr, MENTAL_DISRUPTION_UUID,
+                "rohostility_mental_disruption", mentalDisruptionExpireTicks.size(), 0.015);
+    }
+
+    private void updateParalysisModifier(LivingEntity entity) {
+        applyPercentageDebuffModifier(entity, Attributes.ATTACK_DAMAGE, PARALYSIS_UUID,
+                "rohostility_paralysis", paralysisExpireTicks.size(), 0.01);
     }
 
     private void updateApocalypseModifiers(LivingEntity entity) {

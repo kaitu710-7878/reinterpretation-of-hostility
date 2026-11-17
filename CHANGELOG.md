@@ -1,5 +1,37 @@
 # Changelog / 変更履歴
 
+## [0.2.8-beta] - 2026-11-17
+
+### 日本語
+- **間接・遠距離・魔法攻撃へのレベル倍率適用**: `ATTACK_DAMAGE` Attribute を持たないモブだけでなく、スケルトンの弓矢・エヴォーカーの牙・エンダードラゴンのブレス/火球などの遠距離・間接・魔法攻撃に対してもレベル補正が正しく乗算されるよう改善（近接攻撃の二重適用を防止）。
+- **12種類の新特性を追加**:
+  - **迅速 (`swift`, 50)**: 移動速度+15%
+  - **着火 (`ignite`, 50)**: 攻撃時45%で4秒間引火
+  - **吸引 (`pull`, 120)** / **反発 (`repulse`, 120)**: 18秒CDでノックバック耐性無視のベクトル加算（ノックバックI相当）
+  - **鈍重 (`heavy`, 60)**: 移動速度-15%、ノックバック耐性+0.3、攻撃力+10%
+  - **免疫 (`immunity`, 50)**: デバフ受領時50%でLv-1（下限Lv.1）、30秒以上の効果時間を30秒に上書き
+  - **侵食 (`corrosion`, 250)**: 攻撃時25%で8秒間、防御力-1%・防具強度-0.5%（奪取と同ロジック・独立重複）
+  - **精神撹乱 (`mental_disruption`, 170)**: 攻撃時40%で8秒間、`l2damagetracker:magic_damage` -1.5%（奪取と同ロジック・未導入時は魔法与ダメ軽減フォールバック）
+  - **麻痺 (`paralysis`, 170)**: 攻撃時35%で8秒間、`generic.attack_damage` -1%（奪取と同ロジック・独立重複）
+  - **エンダー (`ender`, 50)**: エンダーマン同様に飛び道具を無効化（回避・テレポートなし）
+  - **幻影 (`illusion`, 50)**: イリュージョナー同様の見た目だけの幻影を2体表示（透明化なし）
+  - **守護の印 (`guardian_seal`, 300)**: 敵対時40秒CDで発光・レベル適用・特性なしゾンビを3体召喚し、生存中は被ダメージ75%軽減（窒息/32m離脱/見失い/停止で即消滅、3倍デスポーン）
+
+### English
+- **Level Scaling for Ranged, Indirect, and Magic Attacks**: Extended level-based damage scaling beyond `ATTACK_DAMAGE`-less mobs to projectiles, Evoker fangs, Ender Dragon breath/fireballs, and indirect/magic attacks (avoiding double-scaling on vanilla melee).
+- **Added 12 New Traits**:
+  - **Swift (`swift`, 50)**: +15% Movement Speed.
+  - **Ignite (`ignite`, 50)**: 45% chance on hit to ignite target for 4s.
+  - **Pull (`pull`, 120)** / **Repulse (`repulse`, 120)**: 18s CD Knockback-I-equivalent velocity impulse ignoring KB resistance.
+  - **Heavy (`heavy`, 60)**: -15% Movement Speed, +0.3 Knockback Resistance, +10% Attack Damage.
+  - **Immunity (`immunity`, 50)**: 50% chance to lower incoming debuff level by 1 (min Lv.1); caps duration at 30s.
+  - **Corrosion (`corrosion`, 250)**: 25% chance on hit to subtract 1% Armor & 0.5% Toughness for 8s (stackable).
+  - **Mental Disruption (`mental_disruption`, 170)**: 40% chance on hit to subtract 1.5% `l2damagetracker:magic_damage` for 8s (with fallback if L2DamageTracker is absent).
+  - **Paralysis (`paralysis`, 170)**: 35% chance on hit to subtract 1% `generic.attack_damage` for 8s (stackable).
+  - **Ender (`ender`, 50)**: Nullifies projectiles like an Enderman without teleporting.
+  - **Illusion (`illusion`, 50)**: Renders 2 Illusioner-style visual decoys without invisibility.
+  - **Guardian Seal (`guardian_seal`, 300)**: Every 40s in combat, summons 3 glowing level-scaled traitless Zombies; -75% damage taken while any live (auto-discards on suffocation/32m range/lost target/stuck, 3x faster despawn).
+
 ## [0.2.7-beta] - 2026-11-16
 
 ### 日本語

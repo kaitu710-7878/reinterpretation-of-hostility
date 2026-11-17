@@ -32,7 +32,7 @@ The configuration file is generated at `config/rohostility-common.toml`.
 
 ## `[traits.<id>]` - 特性別設定 / Per-Trait Settings
 
-各特性（`revive`, `regeneration`, `adaptation`, `apocalypse`, `destruction`, `unreality`, `fortitude`, `protection`, `plunder`, `berserker`, `seal`, `lifesteal`, `armor_pierce`, `protection_pierce`, `step_up`, `universal_resistance`, `sturdy`, `vitality`, `anti_revive`, `counterattack`, `inspire`, `poison_strike`, `weakness_strike`, `resentment`）ごとに以下を設定できます。  
+各特性（`revive`, `regeneration`, `adaptation`, `apocalypse`, `destruction`, `unreality`, `fortitude`, `protection`, `plunder`, `berserker`, `seal`, `lifesteal`, `armor_pierce`, `protection_pierce`, `step_up`, `universal_resistance`, `sturdy`, `vitality`, `anti_revive`, `counterattack`, `inspire`, `poison_strike`, `weakness_strike`, `resentment`, `swift`, `ignite`, `pull`, `repulse`, `heavy`, `immunity`, `corrosion`, `mental_disruption`, `paralysis`, `ender`, `illusion`, `guardian_seal`）ごとに以下を設定できます。  
 Each trait has the following entries:
 
 | パラメータ / Key | 型 / Type | 説明 / Description |

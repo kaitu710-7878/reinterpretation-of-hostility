@@ -44,6 +44,7 @@ import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.monster.Vex;
+import net.minecraft.world.entity.monster.Zombie;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.common.ForgeMod;
 import net.minecraftforge.event.entity.EntityJoinLevelEvent;
@@ -55,7 +56,9 @@ import net.minecraftforge.event.entity.living.LivingEvent;
 import net.minecraftforge.event.entity.living.LivingHealEvent;
 import net.minecraftforge.event.entity.living.LivingHurtEvent;
 import net.minecraftforge.event.entity.living.LivingUseTotemEvent;
+import net.minecraftforge.event.entity.living.MobEffectEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
+import net.minecraftforge.eventbus.api.Event;
 import net.minecraftforge.eventbus.api.EventPriority;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
@@ -83,6 +86,7 @@ public final class HostilityEventHandler {
 
     private static boolean handlingCounterattack = false;
     private static boolean handlingPierceDamage = false;
+    private static boolean handlingImmunityEffect = false;
 
     private record AttackerSnapshot(int level, Set<TraitType> traits) {
         boolean hasTrait(TraitType type) {
@@ -200,6 +204,18 @@ public final class HostilityEventHandler {
             if (cap.hasTrait(TraitType.INSPIRE) && entity.isAlive() && entity instanceof Mob mob) {
                 tickInspire(mob, cap, gameTime);
             }
+
+            if (cap.hasTrait(TraitType.GUARDIAN_SEAL) && entity.isAlive() && entity instanceof Mob mob) {
+                tickGuardianSeal(mob, cap, gameTime);
+            }
+
+            if (cap.isGuardianZombie && entity.isAlive() && entity instanceof Mob zombie) {
+                tickGuardianZombie(zombie, cap);
+            }
+
+            if (entity.isAlive() && entity instanceof Mob mob) {
+                tickPullAndRepulse(mob, cap, gameTime);
+            }
         }
     }
 
@@ -285,17 +301,194 @@ public final class HostilityEventHandler {
         }
     }
 
+    private static void tickGuardianSeal(Mob mob, MobTraitCapability cap, long gameTime) {
+        if (!(mob.level() instanceof ServerLevel serverLevel)) {
+            return;
+        }
+        hasAliveGuardianZombie(serverLevel, cap);
+        if (gameTime - cap.lastGuardianTick >= 800L && mob.getTarget() != null && mob.getTarget().isAlive()) {
+            cap.lastGuardianTick = gameTime;
+            RandomSource rand = mob.getRandom();
+            for (int i = 0; i < 3; i++) {
+                Zombie zombie = EntityType.ZOMBIE.create(serverLevel);
+                if (zombie != null) {
+                    double zx = mob.getX() + (rand.nextDouble() - 0.5) * 3.0;
+                    double zy = mob.getY();
+                    double zz = mob.getZ() + (rand.nextDouble() - 0.5) * 3.0;
+                    zombie.moveTo(zx, zy, zz, mob.getYRot(), 0.0f);
+                    zombie.finalizeSpawn(serverLevel, serverLevel.getCurrentDifficultyAt(mob.blockPosition()),
+                            MobSpawnType.MOB_SUMMONED, null, null);
+                    zombie.setGlowingTag(true);
+                    zombie.setTarget(mob.getTarget());
+                    MobTraitCapability zCap = MobTraitCapability.getOrNull(zombie);
+                    if (zCap != null) {
+                        zCap.isGuardianZombie = true;
+                        zCap.guardianOwnerUuid = mob.getUUID().toString();
+                        zCap.initialized = true;
+                        zCap.level = cap.level;
+                        if (cap.level > 0) {
+                            HostilityScaler.applyLevelStats(zombie, cap.level);
+                        }
+                        HostilityScaler.syncToTracking(zombie, zCap);
+                    }
+                    serverLevel.addFreshEntity(zombie);
+                    cap.guardianZombieUuids.add(zombie.getUUID().toString());
+                }
+            }
+        }
+    }
+
+    private static boolean hasAliveGuardianZombie(ServerLevel serverLevel, MobTraitCapability cap) {
+        Iterator<String> it = cap.guardianZombieUuids.iterator();
+        int aliveCount = 0;
+        while (it.hasNext()) {
+            try {
+                UUID uuid = UUID.fromString(it.next());
+                Entity e = serverLevel.getEntity(uuid);
+                if (e instanceof Zombie zombie && zombie.isAlive()) {
+                    aliveCount++;
+                } else {
+                    it.remove();
+                }
+            } catch (IllegalArgumentException ex) {
+                it.remove();
+            }
+        }
+        return aliveCount > 0;
+    }
+
+    private static void tickGuardianZombie(Mob zombie, MobTraitCapability cap) {
+        if (!(zombie.level() instanceof ServerLevel serverLevel)) {
+            return;
+        }
+        // 3x faster despawn tendency
+        zombie.setNoActionTime(zombie.getNoActionTime() + 2);
+
+        if (zombie.isInWall()) {
+            zombie.discard();
+            return;
+        }
+        if (zombie.getTarget() == null || !zombie.getTarget().isAlive()) {
+            zombie.discard();
+            return;
+        }
+        Entity owner = null;
+        if (cap.guardianOwnerUuid != null && !cap.guardianOwnerUuid.isEmpty()) {
+            try {
+                owner = serverLevel.getEntity(UUID.fromString(cap.guardianOwnerUuid));
+            } catch (IllegalArgumentException ignored) {
+            }
+        }
+        if (!(owner instanceof LivingEntity livingOwner) || !livingOwner.isAlive()
+                || zombie.distanceToSqr(livingOwner) > 32.0 * 32.0) {
+            zombie.discard();
+            return;
+        }
+
+        if (zombie.tickCount - cap.guardianLastCheckTick >= 20) {
+            double distMovedSq = zombie.distanceToSqr(cap.lastGuardianX, cap.lastGuardianY, cap.lastGuardianZ);
+            if (cap.guardianLastCheckTick > 0
+                    && distMovedSq < 0.01
+                    && zombie.distanceToSqr(zombie.getTarget()) > 6.25) {
+                cap.guardianStuckCounter++;
+                if (cap.guardianStuckCounter >= 2) {
+                    zombie.discard();
+                    return;
+                }
+            } else {
+                cap.guardianStuckCounter = 0;
+            }
+            cap.lastGuardianX = zombie.getX();
+            cap.lastGuardianY = zombie.getY();
+            cap.lastGuardianZ = zombie.getZ();
+            cap.guardianLastCheckTick = zombie.tickCount;
+        }
+    }
+
+    private static void tickPullAndRepulse(Mob mob, MobTraitCapability cap, long gameTime) {
+        LivingEntity target = mob.getTarget();
+        if (target == null || !target.isAlive() || mob.distanceToSqr(target) > 32.0 * 32.0) {
+            return;
+        }
+        if (cap.hasTrait(TraitType.PULL) && gameTime - cap.lastPullTick >= 360L) {
+            cap.lastPullTick = gameTime;
+            applyVectorImpulse(mob, target, true);
+        }
+        if (cap.hasTrait(TraitType.REPULSE) && gameTime - cap.lastRepulseTick >= 360L) {
+            cap.lastRepulseTick = gameTime;
+            applyVectorImpulse(mob, target, false);
+        }
+    }
+
+    private static void applyVectorImpulse(Mob mob, LivingEntity target, boolean pull) {
+        double dx = pull ? (mob.getX() - target.getX()) : (target.getX() - mob.getX());
+        double dz = pull ? (mob.getZ() - target.getZ()) : (target.getZ() - mob.getZ());
+        double horizSq = dx * dx + dz * dz;
+        if (horizSq < 1.0E-5) {
+            return;
+        }
+        double horiz = Math.sqrt(horizSq);
+        double strength = 0.9; // Equivalent to Knockback I (0.4 base + 0.5 enchant) without KB resistance
+        target.setDeltaMovement(target.getDeltaMovement().add(
+                (dx / horiz) * strength,
+                0.25,
+                (dz / horiz) * strength
+        ));
+        target.hurtMarked = true;
+    }
+
     @SubscribeEvent
+    public static void onMobEffectApplicable(MobEffectEvent.Applicable event) {
+        LivingEntity entity = event.getEntity();
+        if (entity.level().isClientSide() || handlingImmunityEffect) {
+            return;
+        }
+        MobTraitCapability cap = MobTraitCapability.getOrNull(entity);
+        if (cap == null || !cap.hasTrait(TraitType.IMMUNITY)) {
+            return;
+        }
+        MobEffectInstance inst = event.getEffectInstance();
+        if (inst == null || inst.getEffect().isBeneficial()) {
+            return;
+        }
+        int newAmp = inst.getAmplifier();
+        if (entity.getRandom().nextFloat() < 0.50f) {
+            newAmp = Math.max(0, newAmp - 1);
+        }
+        int newDur = inst.getDuration() >= 600 ? 600 : inst.getDuration();
+        if (newAmp != inst.getAmplifier() || newDur != inst.getDuration()) {
+            event.setResult(Event.Result.DENY);
+            handlingImmunityEffect = true;
+            try {
+                entity.addEffect(new MobEffectInstance(
+                        inst.getEffect(),
+                        newDur,
+                        newAmp,
+                        inst.isAmbient(),
+                        inst.isVisible(),
+                        inst.showIcon()
+                ));
+            } finally {
+                handlingImmunityEffect = false;
+            }
+        }
+    }
+
+    @SubscribeEvent(priority = EventPriority.HIGH)
     public static void onLivingAttack(LivingAttackEvent event) {
         LivingEntity target = event.getEntity();
         if (target.level().isClientSide() || handlingCounterattack || handlingPierceDamage) {
             return;
         }
         DamageSource source = event.getSource();
+        MobTraitCapability cap = MobTraitCapability.getOrNull(target);
+        if (cap != null && cap.hasTrait(TraitType.ENDER) && source.is(DamageTypeTags.IS_PROJECTILE)) {
+            event.setCanceled(true);
+            return;
+        }
         if (!(source.getEntity() instanceof LivingEntity attacker) || attacker == target) {
             return;
         }
-        MobTraitCapability cap = MobTraitCapability.getOrNull(target);
         if (cap == null || !cap.hasTrait(TraitType.COUNTERATTACK)) {
             return;
         }
@@ -341,6 +534,13 @@ public final class HostilityEventHandler {
                 event.setAmount(event.getAmount() * 0.80f);
             }
 
+            if (targetCap.hasTrait(TraitType.GUARDIAN_SEAL)
+                    && !source.is(DamageTypeTags.BYPASSES_INVULNERABILITY)
+                    && target.level() instanceof ServerLevel serverLevel
+                    && hasAliveGuardianZombie(serverLevel, targetCap)) {
+                event.setAmount(event.getAmount() * 0.25f);
+            }
+
             if (targetCap.hasTrait(TraitType.ADAPTATION)) {
                 String damageId = source.typeHolder().unwrapKey()
                         .map(key -> key.location().toString())
@@ -354,6 +554,13 @@ public final class HostilityEventHandler {
             return;
         }
 
+        if (source.getEntity() instanceof LivingEntity attacker) {
+            EntityDebuffCapability attackerDebuff = EntityDebuffCapability.getOrNull(attacker);
+            if (attackerDebuff != null && !attackerDebuff.hasL2MagicDamageAttribute() && isMagicDamage(source)) {
+                event.setAmount((float) (event.getAmount() * attackerDebuff.getMentalDisruptionFallbackMultiplier()));
+            }
+        }
+
         // Offensive traits from attacker mob (supports discarded Creepers via PersistentData fallback)
         if (source.getEntity() instanceof LivingEntity attacker && MobTraitCapability.isHostileCandidate(attacker)) {
             AttackerSnapshot attackerSnap = getAttackerSnapshot(attacker);
@@ -361,12 +568,18 @@ public final class HostilityEventHandler {
                 return;
             }
 
-            // Apply level-based damage scaling for mobs without ATTACK_DAMAGE (e.g., Creeper explosions)
-            if (attackerSnap.level() > 0 && attacker.getAttribute(Attributes.ATTACK_DAMAGE) == null) {
-                double mod = ModConfig.COMMON.statScalingModifier.get();
-                if (mod > 0.0) {
-                    double bonus = attackerSnap.level() * ModConfig.COMMON.damageBonusPerLevel.get() * mod;
-                    event.setAmount((float) (event.getAmount() * (1.0 + bonus)));
+            // Apply level-based damage scaling for attacks that do not use Attributes.ATTACK_DAMAGE
+            // (e.g., Creeper explosions, Skeleton arrows, Evoker fangs, Ender Dragon breath/fireballs, magic)
+            if (needsLevelDamageScaling(attacker, source)) {
+                if (attackerSnap.level() > 0) {
+                    double mod = ModConfig.COMMON.statScalingModifier.get();
+                    if (mod > 0.0) {
+                        double bonus = attackerSnap.level() * ModConfig.COMMON.damageBonusPerLevel.get() * mod;
+                        event.setAmount((float) (event.getAmount() * (1.0 + bonus)));
+                    }
+                }
+                if (attackerSnap.hasTrait(TraitType.HEAVY)) {
+                    event.setAmount(event.getAmount() * 1.10f);
                 }
             }
 
@@ -489,6 +702,22 @@ public final class HostilityEventHandler {
         if (snap.hasTrait(TraitType.RESENTMENT) && rand.nextFloat() < 0.40f) {
             target.addEffect(new MobEffectInstance(ModEffects.CURSE.get(), 160, 0));
         }
+
+        if (snap.hasTrait(TraitType.IGNITE) && rand.nextFloat() < 0.45f) {
+            target.setSecondsOnFire(4);
+        }
+
+        if (targetDebuff != null && snap.hasTrait(TraitType.CORROSION) && rand.nextFloat() < 0.25f) {
+            targetDebuff.addCorrosionStack(target, gameTime);
+        }
+
+        if (targetDebuff != null && snap.hasTrait(TraitType.MENTAL_DISRUPTION) && rand.nextFloat() < 0.40f) {
+            targetDebuff.addMentalDisruptionStack(target, gameTime);
+        }
+
+        if (targetDebuff != null && snap.hasTrait(TraitType.PARALYSIS) && rand.nextFloat() < 0.35f) {
+            targetDebuff.addParalysisStack(target, gameTime);
+        }
     }
 
     @SubscribeEvent(priority = EventPriority.HIGHEST)
@@ -555,6 +784,18 @@ public final class HostilityEventHandler {
         if (inst != null && inst.getModifier(uuid) != null) {
             inst.removeModifier(uuid);
         }
+    }
+
+    private static boolean needsLevelDamageScaling(LivingEntity attacker, DamageSource source) {
+        if (attacker.getAttribute(Attributes.ATTACK_DAMAGE) == null) {
+            return true;
+        }
+        if (source.getDirectEntity() != attacker) {
+            return true;
+        }
+        return !(source.is(DamageTypes.MOB_ATTACK)
+                || source.is(DamageTypes.MOB_ATTACK_NO_AGGRO)
+                || source.is(DamageTypes.PLAYER_ATTACK));
     }
 
     private static boolean isMeleePhysical(DamageSource source) {
