@@ -31,7 +31,7 @@ A Minecraft 1.20.1 (Forge) enemy-scaling mod reinterpreting **L2Hostility**. It 
 - **Attribute & Damage Scaling**:
   - **Max HP**: `+3% / Lv` (`healthBonusPerLevel = 0.03`)
   - **Attack Damage**: `+2% / Lv` (`damageBonusPerLevel = 0.02`)
-  - Applies not only to melee attacks, but also to **ranged, indirect, and magic attacks** (such as Skeleton arrows, Evoker fangs, and Ender Dragon breath/fireballs).
+  - Applies not only to melee attacks, but also to **ranged, indirect, and magic attacks** (such as Skeleton arrows, Evoker fangs, Blaze/Ghast fireballs, and Ender Dragon breath).
 
 ### 4. Trait Rolling, Status Effects & UI
 - **Trait Acquisition**: There is no minimum level gate (Lv.90 restriction removed). Mobs immediately roll traits as soon as their level (cost budget) meets a trait's cost (no trait levels, up to 8 traits per mob).
@@ -137,7 +137,7 @@ Minecraft 1.20.1 (Forge) 向けの敵強化MODです。**L2Hostility** をベー
 - **ステータス補正**:
   - **最大HP**: `+3% / Lv` (`healthBonusPerLevel = 0.03`)
   - **攻撃力**: `+2% / Lv` (`damageBonusPerLevel = 0.02`)
-  - 近接攻撃だけでなく、**スケルトンの弓矢・エヴォーカーの牙・エンダードラゴンのブレス/火球などの遠距離・間接・魔法攻撃**にもレベル倍率が正しく適用されます。
+  - 近接攻撃だけでなく、**スケルトンの弓矢・エヴォーカーの牙・ブレイズやガストの火球・エンダードラゴンのブレスなどの遠距離・間接・魔法攻撃**にもレベル倍率が正しく適用されます。
 
 ### 4. 特性の抽選と状態異常・UI
 - **特性の出現条件**: 最低レベル制限（Lv.90制限）はなく、モブのレベル（＝コスト予算）が特性コスト以上であれば即座に獲得可能です。特性レベルの概念はなく、1体あたり最大8個までコスト・重みに基づき抽選されます。
