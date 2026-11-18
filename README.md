@@ -23,8 +23,8 @@ A Minecraft 1.20.1 (Forge) enemy-scaling mod reinterpreting **L2Hostility**. It 
 ### 3. Danger, Level Scaling & Stats
 - **Danger Progression**:
   - Danger increases **only by killing hostile mobs** (no passive time or dimension-entry danger additions).
-  - Uses L2Hostility's kill-credit experience table formula with `killsPerLevel = 60` (half the pace of original L2Hostility's `30`).
-  - Accumulated danger has a hard stopper cap (`maxDangerCap = 2000.0`) to avoid heavy calculation/rendering overhead.
+  - Uses an experience-table progression formula (`killsPerLevel = 60` same-level kills per danger point).
+  - Accumulated danger has a hard cap (`maxDangerCap = 2000.0`) to keep calculation and rendering lightweight.
 - **Spawn Level Calculation**:
   - Calculated from the nearest unlocked player's danger multiplied by a random factor (`0.85 - 1.15`) plus random variance (`±5`), with no flat dimension spawn bonuses.
   - **Level Cap**: Base cap is **`600`**. Reaching **The End** grants **`+10`**, and each unique **modded dimension** visited grants **`+5`** (viewable in the Hostility tab).
@@ -34,7 +34,7 @@ A Minecraft 1.20.1 (Forge) enemy-scaling mod reinterpreting **L2Hostility**. It 
   - Applies not only to melee attacks, but also to **ranged, indirect, and magic attacks** (such as Skeleton arrows, Evoker fangs, Blaze/Ghast fireballs, and Ender Dragon breath).
 
 ### 4. Trait Rolling, Status Effects & UI
-- **Trait Acquisition**: There is no minimum level gate (Lv.90 restriction removed). Mobs immediately roll traits as soon as their level (cost budget) meets a trait's cost (no trait levels, up to 8 traits per mob).
+- **Trait Acquisition**: Mobs roll traits as soon as their level (cost budget) meets a trait's cost (no trait levels, up to 8 traits per mob).
 - **Custom Status Effects**:
   - **Curse (`rohostility:curse`)**: Harmful effect that reduces all healing received by **50%**.
   - **Revive Prevention (`rohostility:revive_prevention`)**: Neutral effect that **blocks Totem of Undying activation** while active.
@@ -98,15 +98,15 @@ A Minecraft 1.20.1 (Forge) enemy-scaling mod reinterpreting **L2Hostility**. It 
 - `/rohostility unlock <targets>`: Unlock the hostility system for target players.
 - **Debug Mob Editor (`rohostility:debug_mob_editor`)**: Right-click to open a scrollable GUI to configure target level and traits; right-click any hostile mob to respawn it with those overridden settings.
 
-### 7. Installation & Configuration
+### 7. License & Attribution
+This project is licensed under the **GNU Lesser General Public License v2.1 (LGPL-2.1)**. See `LICENSE` for details.
+- **Texture Attribution**: The status effect icon for **Curse (`curse.png`)** is reused from **L2Complements** (by Minecraft-LightLand, licensed under LGPL-2.1).
+
+### 8. Installation & Configuration
 1. Install Minecraft 1.20.1 with Forge (`47.4.0+`).
 2. Place **L2Library** (and optionally Curios API / Jade / Neat) into your `mods` folder.
 3. Place `rohostility-<version>.jar` into your `mods` folder.
 4. See [CONFIG.md](CONFIG.md) for all configuration options.
-
-### 8. License & Attribution
-This project is licensed under the **GNU Lesser General Public License v2.1 (LGPL-2.1)**. See `LICENSE` for details.
-- **Texture Attribution**: The status effect icon for **Curse (`curse.png`)** is reused from **L2Complements** (by Minecraft-LightLand, licensed under LGPL-2.1).
 
 ---
 
@@ -129,8 +129,8 @@ Minecraft 1.20.1 (Forge) 向けの敵強化MODです。**L2Hostility** をベー
 ### 3. 危険度上昇・レベル算出・ステータス補正
 - **危険度の上昇**:
   - 危険度は**敵モブの討伐のみ**で上昇します（時間経過やディメンション移動による加算はありません）。
-  - 本家 L2Hostility と同じ経験値テーブル式を採用し、同レベルモブ討伐あたりの必要数 `killsPerLevel` を本家 (`30`) の倍緩やかな **`60`** に設定しています。
-  - 計算・描画負荷を防ぐため、蓄積危険度にはストッパー上限（`maxDangerCap = 2000.0`）を設けています。
+  - 経験値テーブル式を採用しており、同レベルの敵モブ討伐で危険度が上昇します（`killsPerLevel = 60`）。
+  - 計算・描画負荷を抑えるため、蓄積危険度には上限（`maxDangerCap = 2000.0`）を設けています。
 - **スポーンレベルの決定**:
   - 最寄りのアンロック済みプレイヤーの危険度に対し、ランダム倍率（`0.85 〜 1.15`）およびランダム振れ幅（`±5`）を掛けて算出されます（ディメンションによるフラット加算なし）。
   - **レベル上限**: 基本上限 **`600`**。**エンド到達で `+10`**、**他MOD製ディメンション1種到達ごとに `+5`** 上限が拡張されます（現在の推定出現レベル範囲・上限はタブ画面で確認可能）。
@@ -140,7 +140,7 @@ Minecraft 1.20.1 (Forge) 向けの敵強化MODです。**L2Hostility** をベー
   - 近接攻撃だけでなく、**スケルトンの弓矢・エヴォーカーの牙・ブレイズやガストの火球・エンダードラゴンのブレスなどの遠距離・間接・魔法攻撃**にもレベル倍率が正しく適用されます。
 
 ### 4. 特性の抽選と状態異常・UI
-- **特性の出現条件**: 最低レベル制限（Lv.90制限）はなく、モブのレベル（＝コスト予算）が特性コスト以上であれば即座に獲得可能です。特性レベルの概念はなく、1体あたり最大8個までコスト・重みに基づき抽選されます。
+- **特性の出現条件**: モブのレベル（＝コスト予算）が特性コスト以上であれば特性を獲得できます。特性レベルの概念はなく、1体あたり最大8個までコスト・重みに基づき抽選されます。
 - **状態異常**:
   - **呪詛 (`rohostility:curse`)**: 悪性効果。効果中はあらゆる回復量が **50% 減少**します。
   - **復活阻止 (`rohostility:revive_prevention`)**: 中立効果。効果中は **不死のトーテムが発動できなくなります**。
@@ -206,12 +206,12 @@ Minecraft 1.20.1 (Forge) 向けの敵強化MODです。**L2Hostility** をベー
   - 右クリックでスクロール対応の専用GUIを開き、目標レベルと特性セットを保存できます。
   - 敵モブに対して右クリックすると、指定したレベル・特性に上書きした状態でリスポーン（他MODのスポーン補正含む再計算）させます。
 
-### 7. 導入手順・コンフィグ
+### 7. ライセンス・帰属表記
+本プロジェクトは **GNU Lesser General Public License v2.1 (LGPL-2.1)** の下で公開されています。詳細は `LICENSE` ファイルをご確認ください。
+- **テクスチャ流用表記**: 状態異常「呪詛 (`curse.png`)」のアイコンテクスチャは、**L2Complements**（Minecraft-LightLand 著 / LGPL-2.1）の呪い (`curse.png`) テクスチャを流用しています。
+
+### 8. 導入手順・コンフィグ
 1. Minecraft 1.20.1 と対応する Forge（`47.4.0+`）をインストールします。
 2. **L2Library**（および任意で Curios API / Jade / Neat）を `mods` フォルダに入れます。
 3. 本MODの JAR ファイル（`rohostility-<version>.jar`）を `mods` フォルダに配置します。
 4. 詳細なコンフィグ項目については [CONFIG.md](CONFIG.md) をご覧ください。
-
-### 8. ライセンス・帰属表記
-本プロジェクトは **GNU Lesser General Public License v2.1 (LGPL-2.1)** の下で公開されています。詳細は `LICENSE` ファイルをご確認ください。
-- **テクスチャ流用表記**: 状態異常「呪詛 (`curse.png`)」のアイコンテクスチャは、**L2Complements**（Minecraft-LightLand 著 / LGPL-2.1）の呪い (`curse.png`) テクスチャを流用しています。
